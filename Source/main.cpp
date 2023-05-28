@@ -19,7 +19,40 @@ using namespace Microsoft::WRL;
 // D3D12 extension library.
 #include <d3dx12.h>
 
+// STL Headers
 #include <iostream>
+#include <algorithm>
+#include <cassert>
+#include <chrono>
+
+// From DXSampleHelper.h
+inline void ThrowIfFailed(HRESULT hr)
+{
+    if (FAILED(hr))
+    {
+        throw std::exception();
+    }
+}
+
+bool g_IsInitialized = false;
+bool g_UseWarp = false;
+const unsigned int g_NumFrames = 3; // amount of back buffers for swap chain
+
+unsigned int g_WindowWidth = 1280;
+unsigned int g_WindowHeight = 720;
+
+HWND g_hWnd;
+RECT g_WindowRect;
+
+ComPtr<ID3D12Device2> g_Device;
+ComPtr<ID3D12CommandQueue> g_CommandQueue;
+ComPtr<IDXGISwapChain4> g_SwapChain;
+ComPtr<ID3D12Resource> g_BackBuffers[g_NumFrames];
+ComPtr<ID3D12GraphicsCommandList> g_CommandList;
+ComPtr<ID3D12CommandAllocator> g_CommandAllocators[g_NumFrames];
+ComPtr<ID3D12DescriptorHeap> g_RTVDescriptorHeap;
+UINT g_RTVDescriptorSize;
+UINT g_CurrentBackBufferIndex;
 
 int main()
 {
