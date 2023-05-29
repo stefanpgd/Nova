@@ -162,6 +162,71 @@ ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter)
 	return device;
 }
 
+ComPtr<ID3D12CommandQueue> CreateCommandQueue(ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type)
+{
+	ComPtr<ID3D12CommandQueue> commandQueue;
+
+	D3D12_COMMAND_QUEUE_DESC description = {};
+	description.Type = type;
+	description.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+	description.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	description.NodeMask = 0;
+
+	ThrowIfFailed(device->CreateCommandQueue(&description, IID_PPV_ARGS(&commandQueue)));
+	return commandQueue;
+}
+
+// Check if tearing is supported, aka the monitor has Free Sync/ G-Sync
+bool CheckTearingSupport()
+{
+	BOOL allowTearing = FALSE;
+
+	ComPtr<IDXGIFactory5> factory5;
+	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&factory5)));
+
+	if (FAILED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing))))
+	{
+		allowTearing = FALSE;
+	}
+
+	return allowTearing == TRUE;
+}
+
+ComPtr<IDXGISwapChain4> CreateSwapChain(HWND hWnd, ComPtr<ID3D12CommandQueue> commandQueue,
+	unsigned int width, unsigned int height, unsigned int bufferCount)
+{
+	ComPtr<IDXGISwapChain4> swapChain;
+	ComPtr<IDXGIFactory4> factory;
+
+	UINT factoryFlags = 0;
+#if defined(_DEBUG)
+	factoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+#endif
+
+	ThrowIfFailed(CreateDXGIFactory2(factoryFlags, IID_PPV_ARGS(&factory)));
+
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+	swapChainDesc.Width = width;
+	swapChainDesc.Height = height;
+	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.Stereo = FALSE;
+	swapChainDesc.SampleDesc = { 1, 0 };
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.BufferCount = bufferCount;
+	swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+	swapChainDesc.Flags = CheckTearingSupport() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+
+	ComPtr<IDXGISwapChain1> swapChain1;
+	ThrowIfFailed(factory->CreateSwapChainForHwnd(commandQueue.Get(), hWnd, &swapChainDesc, nullptr, nullptr, &swapChain1));
+
+	ThrowIfFailed(factory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER));
+	ThrowIfFailed(swapChain1.As(&swapChain));
+
+	return swapChain;
+}
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT u, WPARAM w, LPARAM l)
 {
 	return NULL;
@@ -169,6 +234,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT u, WPARAM w, LPARAM l)
 
 int main()
 {
+	CheckTearingSupport();
+
 	printf("Hello World\n");
 	float x;
 	std::cin >> x;
