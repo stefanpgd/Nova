@@ -227,6 +227,23 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(HWND hWnd, ComPtr<ID3D12CommandQueue> co
 	return swapChain;
 }
 
+void UpdateRenderTargetViews(ComPtr<ID3D12Device2> device, ComPtr<IDXGISwapChain4> swapChain, ComPtr<ID3D12DescriptorHeap> descriptorHeap)
+{
+	unsigned int rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(descriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	for (int i = 0; i < g_NumFrames; ++i)
+	{
+		ComPtr<ID3D12Resource> backBuffer;
+
+		ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer)));
+		device->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
+
+		g_BackBuffers[i] = backBuffer;
+		rtvHandle.Offset(rtvDescriptorSize);
+	}
+}
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT u, WPARAM w, LPARAM l)
 {
 	return NULL;
