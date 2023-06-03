@@ -74,12 +74,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Build\bin\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(SolutionDir)Dependencies\Microsoft;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Dependencies\Microsoft;$(SolutionDir)Headers\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Build\bin\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(SolutionDir)Dependencies\Microsoft;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Dependencies\Microsoft;$(SolutionDir)Headers\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -142,7 +142,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Renderer.cpp" />
     <ClCompile Include="Source\main.cpp" />
+    <ClCompile Include="Source\Utilities.cpp" />
+    <ClCompile Include="Source\Window.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Headers\Renderer.h" />
+    <ClInclude Include="Headers\Utilities.h" />
+    <ClInclude Include="Headers\Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
