@@ -1,9 +1,9 @@
 #include "Window.h"
 #include "Utilities.h"
+#include "resource.h"
 
 #include <cassert>
 #include <algorithm>
-
 
 Window::Window(std::wstring windowName, unsigned int windowWidth, unsigned int windowHeight, 
 	ComPtr<ID3D12Device2> device, ComPtr<ID3D12CommandQueue> commandQueue) :

@@ -3,6 +3,7 @@
 #include <Windows.h>
 
 #include "Renderer.h"
+#include "resource.h"
 
 // STL Headers
 #include <iostream>
@@ -22,7 +23,7 @@ void RegisterWindowClass(HINSTANCE hInst, std::wstring windowName)
 	windowClassDescription.cbClsExtra = 0;
 	windowClassDescription.cbWndExtra = 0;
 	windowClassDescription.hInstance = hInst;
-	windowClassDescription.hIcon = ::LoadIcon(hInst, NULL);
+	windowClassDescription.hIcon = ::LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
 	windowClassDescription.hCursor = ::LoadCursor(NULL, IDC_ARROW);
 	windowClassDescription.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	windowClassDescription.lpszMenuName = NULL;

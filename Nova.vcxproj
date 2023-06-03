@@ -150,6 +150,13 @@
     <ClInclude Include="Headers\Renderer.h" />
     <ClInclude Include="Headers\Utilities.h" />
     <ClInclude Include="Headers\Window.h" />
+    <ClInclude Include="Headers\resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Nova.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\Logo\Logo_Nova_BG_ICO.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
