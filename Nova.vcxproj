@@ -144,7 +144,6 @@
   <ItemGroup>
     <ClCompile Include="Source\Renderer.cpp" />
     <ClCompile Include="Source\main.cpp" />
-    <ClCompile Include="Source\Utilities.cpp" />
     <ClCompile Include="Source\Window.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -4,6 +4,7 @@
 #include <cassert>
 #include <algorithm>
 
+
 Window::Window(std::wstring windowName, unsigned int windowWidth, unsigned int windowHeight, 
 	ComPtr<ID3D12Device2> device, ComPtr<ID3D12CommandQueue> commandQueue) :
 	windowName(windowName), windowWidth(windowWidth), windowHeight(windowHeight), device(device), commandQueue(commandQueue)
@@ -24,6 +25,11 @@ Window::Window(std::wstring windowName, unsigned int windowWidth, unsigned int w
 
 	CreateSwapChain();
 	CreateRTVDescriptorHeap();
+	UpdateRenderTargetViews();
+
+	currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
+
+	ShowWindow(hWnd, SW_SHOW);
 }
 
 void Window::Present()
@@ -35,12 +41,18 @@ void Window::Present()
 	currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 }
 
-void Window::Resize(unsigned int width, unsigned int height)
+void Window::Resize()
 {
+	RECT clientRect = {};
+	GetClientRect(hWnd, &clientRect);
+
+	int width = clientRect.right - clientRect.left;
+	int height = clientRect.bottom - clientRect.top;
+
 	if (windowWidth != width || windowHeight != height)
 	{
-		windowWidth = std::max(1u, width);
-		windowHeight = std::max(1u, height);
+		windowWidth = width > 1 ? width : 1;
+		windowWidth = height > 1 ? height : 1;
 
 		// Note: Call Renderer flush here.
 		//Flush(commandQueue, g_Fence, g_FenceValue, g_FenceEvent);

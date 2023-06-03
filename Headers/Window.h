@@ -10,6 +10,7 @@ using namespace Microsoft::WRL;
 #include <dxgi1_6.h>
 #include <d3dx12.h>
 
+
 /// <summary>
 /// The window is responsible for creating the window and the swapchain.
 /// The window also manages presenting and resizing.
@@ -21,7 +22,7 @@ public:
 		ComPtr<ID3D12Device2> device, ComPtr<ID3D12CommandQueue> commandQueue);
 
 	void Present();
-	void Resize(unsigned int width, unsigned int height);
+	void Resize();
 
 	HWND GetHWND();
 	unsigned int GetCurrentBackBufferIndex();
@@ -47,7 +48,7 @@ private:
 	unsigned int windowWidth;
 	unsigned int windowHeight;
 	RECT windowRect;
-	static HWND hWnd;
+	HWND hWnd;
 
 	bool vSync = true; // present frames at the same interval as the screen's refresh rate
 	bool tearingSupported = false;
