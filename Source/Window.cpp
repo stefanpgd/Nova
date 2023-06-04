@@ -54,9 +54,6 @@ void Window::Resize()
 		windowWidth = width > 1 ? width : 1;
 		windowWidth = height > 1 ? height : 1;
 
-		// Note: Call Renderer flush here.
-		//Flush(commandQueue, g_Fence, g_FenceValue, g_FenceEvent);
-
 		for (int i = 0; i < BackBufferCount; ++i)
 		{
 			// Any references to the back buffers must be released
