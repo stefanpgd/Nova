@@ -142,12 +142,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\DXCommandQueue.cpp" />
     <ClCompile Include="Source\Engine.cpp" />
     <ClCompile Include="Source\Renderer.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Headers\DXCommandQueue.h" />
     <ClInclude Include="Headers\Engine.h" />
     <ClInclude Include="Headers\Renderer.h" />
     <ClInclude Include="Headers\Utilities.h" />

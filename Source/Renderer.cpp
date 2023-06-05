@@ -1,5 +1,6 @@
 #include "Renderer.h"
 #include "Utilities.h"
+#include "DXCommandQueue.h"
 
 #include <d3d12.h>
 #include <cassert>
@@ -11,29 +12,22 @@ Renderer::Renderer(std::wstring windowName)
 	EnableDebugLayer();
 
 	CreateDevice();
-	CreateCommandQueue();
-
-	window = new Window(windowName, 1280, 720, device, commandQueue);
-
-	CreateCommandAllocators();
-	CreateCommandList();
-	CreateSynchronizationObjects();
+	commandQueue = new DXCommandQueue(device);
+	window = new Window(windowName, 1280, 720, device, commandQueue->Get());
 }
 
 Renderer::~Renderer()
 {
-	Flush(fenceValue);
-	CloseHandle(fenceEvent);
+	delete commandQueue;
 }
 
 void Renderer::Render()
 {
-	unsigned int currentBufferIndex = window->GetCurrentBackBufferIndex();
-	ComPtr<ID3D12CommandAllocator> commandAllocator = commandAllocators[currentBufferIndex];
+	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
-
-	commandAllocator->Reset();
-	commandList->Reset(commandAllocator.Get(), nullptr);
+	
+	commandQueue->ResetCommandList(backBufferIndex);
+	ComPtr<ID3D12GraphicsCommandList2> commandList = commandQueue->GetCommandList();
 
 	CD3DX12_RESOURCE_BARRIER renderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.Get(),
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -46,21 +40,17 @@ void Renderer::Render()
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	commandList->ResourceBarrier(1, &presentBarrier);
 
-	ThrowIfFailed(commandList->Close());
-
-	ID3D12CommandList* const commandLists[] = { commandList.Get() };
-	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
-
-	frameFenceValues[currentBufferIndex] = Signal(fenceValue);
-
+	commandQueue->ExecuteCommandList(backBufferIndex);
 	window->Present();
 
-	WaitForFenceValue(frameFenceValues[currentBufferIndex]);
+	// calling 'GetCurrentBackBufferIndex' again, since we've presented and the
+	// current back buffer has now changed.
+	commandQueue->WaitForFenceValue(window->GetCurrentBackBufferIndex());
 }
 
 void Renderer::Resize()
 {
-	Flush(fenceValue);
+	commandQueue->Flush();
 	window->Resize();
 }
 
@@ -71,28 +61,6 @@ void Renderer::EnableDebugLayer()
 	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)));
 	debugInterface->EnableDebugLayer();
 #endif
-}
-
-uint64_t Renderer::Signal(uint64_t& fenceValue)
-{
-	uint64_t signalValue = ++fenceValue;
-	ThrowIfFailed(commandQueue->Signal(fence.Get(), signalValue));
-	return signalValue;
-}
-
-void Renderer::WaitForFenceValue(uint64_t fenceValue)
-{
-	if (fence->GetCompletedValue() < fenceValue)
-	{
-		ThrowIfFailed(fence->SetEventOnCompletion(fenceValue, fenceEvent));
-		WaitForSingleObject(fenceEvent, static_cast<DWORD>(std::chrono::milliseconds::max().count()));
-	}
-}
-
-void Renderer::Flush(uint64_t& fenceValue)
-{
-	uint64_t fenceValueForSignal = Signal(fenceValue);
-	WaitForFenceValue(fenceValueForSignal);
 }
 
 void Renderer::CreateDevice()
@@ -159,47 +127,4 @@ void Renderer::CreateDevice()
 		ThrowIfFailed(pInfoQueue->PushStorageFilter(&NewFilter));
 	}
 #endif
-}
-
-void Renderer::CreateCommandQueue()
-{
-	D3D12_COMMAND_QUEUE_DESC description = {};
-	description.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	description.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-	description.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	description.NodeMask = 0;
-
-	ThrowIfFailed(device->CreateCommandQueue(&description, IID_PPV_ARGS(&commandQueue)));
-}
-
-void Renderer::CreateCommandList()
-{
-	ThrowIfFailed(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
-		commandAllocators[window->GetCurrentBackBufferIndex()].Get(), nullptr, IID_PPV_ARGS(&commandList)));
-
-	// Command List open in a recording state, since in our render loop we start with `Reset`
-	// we want to close the command list first so it can be properly reset.
-	ThrowIfFailed(commandList->Close());
-}
-
-void Renderer::CreateCommandAllocators()
-{
-	// Command Allocator //
-	for (int i = 0; i < Window::BackBufferCount; ++i)
-	{
-		ComPtr<ID3D12CommandAllocator> commandAllocator;
-		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator)));
-
-		commandAllocators[i] = commandAllocator;
-	}
-}
-
-void Renderer::CreateSynchronizationObjects()
-{
-	// Fence //
-	ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
-
-	// Event Handle //
-	fenceEvent = ::CreateEvent(NULL, FALSE, FALSE, NULL);
-	assert(fenceEvent && "Failed to create");
 }
