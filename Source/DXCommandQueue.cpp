@@ -41,11 +41,11 @@ void DXCommandQueue::Signal()
 	ThrowIfFailed(commandQueue->Signal(fence.Get(), fenceValue));
 }
 
-void DXCommandQueue::WaitForFenceValue(uint64_t targetFenceValue)
+void DXCommandQueue::WaitForFenceValue(unsigned int currentBackBuffer)
 {
-	if (fence->GetCompletedValue() < targetFenceValue)
+	if (fence->GetCompletedValue() < frameFenceValues[currentBackBuffer])
 	{
-		ThrowIfFailed(fence->SetEventOnCompletion(targetFenceValue, fenceEvent));
+		ThrowIfFailed(fence->SetEventOnCompletion(frameFenceValues[currentBackBuffer], fenceEvent));
 		WaitForSingleObject(fenceEvent, static_cast<DWORD>(std::chrono::milliseconds::max().count()));
 	}
 }
