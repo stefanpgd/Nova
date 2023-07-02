@@ -29,6 +29,9 @@ public:
 	ComPtr<ID3D12Resource> GetCurrentBackBuffer();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCurrentBackBufferRTV();
 
+	unsigned int GetWindowWidth();
+	unsigned int GetWindowHeight();
+
 private:
 	void SetupWindow(HINSTANCE hInst);
 	void CreateSwapChain();

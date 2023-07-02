@@ -5,6 +5,34 @@
 #include <d3d12.h>
 #include <cassert>
 #include <chrono>
+#include <d3dcompiler.h>
+
+struct VertexPosColor
+{
+	XMFLOAT3 Position;
+	XMFLOAT3 Color;
+};
+
+static VertexPosColor g_Vertices[8] = {
+	{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }, // 0
+	{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }, // 1
+	{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }, // 2
+	{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }, // 3
+	{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }, // 4
+	{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }, // 5
+	{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }, // 6
+	{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }  // 7
+};
+
+static WORD g_Indicies[36] =
+{
+	0, 1, 2, 0, 2, 3,
+	4, 6, 5, 4, 7, 6,
+	4, 5, 1, 4, 1, 0,
+	3, 2, 6, 3, 6, 7,
+	1, 5, 6, 1, 6, 2,
+	4, 0, 3, 4, 3, 7
+};
 
 Renderer::Renderer(std::wstring windowName)
 {
@@ -13,7 +41,11 @@ Renderer::Renderer(std::wstring windowName)
 
 	CreateDevice();
 	commandQueue = new DXCommandQueue(device);
-	window = new Window(windowName, 1280, 720, device, commandQueue->Get());
+	window = new Window(windowName, startWindowWidth, startWindowHeight, device, commandQueue->Get());
+
+	scissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
+	viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, (float)window->GetWindowWidth(), (float)window->GetWindowHeight());
+	FOV = 60.0f;
 }
 
 Renderer::~Renderer()
@@ -25,7 +57,7 @@ void Renderer::Render()
 {
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
-	
+
 	commandQueue->ResetCommandList(backBufferIndex);
 	ComPtr<ID3D12GraphicsCommandList2> commandList = commandQueue->GetCommandList();
 
@@ -113,9 +145,9 @@ void Renderer::CreateDevice()
 
 		// Suppress individual messages by their ID
 		D3D12_MESSAGE_ID DenyIds[] = {
-			D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,  
-			D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,                        
-			D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,                      
+			D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+			D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+			D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
 		};
 
 		D3D12_INFO_QUEUE_FILTER NewFilter = {};
@@ -127,4 +159,43 @@ void Renderer::CreateDevice()
 		ThrowIfFailed(pInfoQueue->PushStorageFilter(&NewFilter));
 	}
 #endif
+}
+
+void Renderer::UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12Resource** intermediateBuffer, size_t numberOfElements, size_t elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags)
+{
+	if (!bufferData)
+	{
+		assert(false && "Buffer that is trying to be uploaded to GPU memory is NULL");
+	}
+
+	// Size of the entire buffer in bytes
+	size_t bufferSize = elementSize * numberOfElements;
+
+	// Create a commited resource for the GPU resource
+	ThrowIfFailed(device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_PPV_ARGS(destinationResource)));
+	// This is used to create a resource and an implicit heap that is large enough to store the given resource. This `destinationResource` is also mapped to the implicit heap
+
+	// Though the heap is created, nothing has been uploaded yet
+	// We create another resource, this time on the GPU's Upload Heap.
+	// This heap is optimized to receive a CPU to GPU write-once only call
+	// Then once it's on the GPU, we can transfer the data from the Upload Heap to the Default heap
+	ThrowIfFailed(device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(intermediateBuffer)));
+
+
+	D3D12_SUBRESOURCE_DATA subresourceData = {};
+	subresourceData.pData = bufferData;
+	subresourceData.RowPitch = bufferSize;
+	subresourceData.SlicePitch = bufferSize; // Double check if 1 works here as well?
+
+	// Using the info from the subresource data struct, the data will now be copied over to the Upload heap and then the Default Heap to the destination resource.
+	UpdateSubresources(commandQueue->GetCommandList().Get(), *destinationResource, *intermediateBuffer, 0, 0, 1, &subresourceData);
 }

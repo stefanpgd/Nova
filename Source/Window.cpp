@@ -86,6 +86,16 @@ CD3DX12_CPU_DESCRIPTOR_HANDLE Window::GetCurrentBackBufferRTV()
 	return rtv;
 }
 
+unsigned int Window::GetWindowWidth()
+{
+	return windowWidth;
+}
+
+unsigned int Window::GetWindowHeight()
+{
+	return windowHeight;
+}
+
 HWND Window::GetHWND()
 {
 	return hWnd;

@@ -61,4 +61,8 @@
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\triangle.vertex.hlsl" />
+    <FxCompile Include="Shaders\triangle.pixel.hlsl" />
+  </ItemGroup>
 </Project>
