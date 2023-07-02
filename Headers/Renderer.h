@@ -5,9 +5,12 @@
 #include <wrl.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
+#include <d3dcompiler.h>
+#include <DirectXMath.h>
+
+#include <d3dx12.h>
 
 #include "DXCommandQueue.h"
-#include <DirectXMath.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -25,11 +28,12 @@ private:
 	void EnableDebugLayer();
 	void CreateDevice();
 
+	void LoadContent();
 	void TransitionResource();
 	void ClearRTV();
 	void ClearDepth();
 	void UpdateBufferResource(ID3D12Resource** targetBuffer, ID3D12Resource** intermediateBuffer, size_t numberOfElements, 
-		size_t elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags);
+		size_t elementSize, const void* bufferData);
 	void ResizeDepthBuffer();
 
 private:

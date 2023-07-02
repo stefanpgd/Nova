@@ -2,10 +2,8 @@
 #include "Utilities.h"
 #include "DXCommandQueue.h"
 
-#include <d3d12.h>
 #include <cassert>
 #include <chrono>
-#include <d3dcompiler.h>
 
 struct VertexPosColor
 {
@@ -24,7 +22,7 @@ static VertexPosColor g_Vertices[8] = {
 	{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }  // 7
 };
 
-static WORD g_Indicies[36] =
+static short g_Indicies[36] =
 {
 	0, 1, 2, 0, 2, 3,
 	4, 6, 5, 4, 7, 6,
@@ -46,6 +44,20 @@ Renderer::Renderer(std::wstring windowName)
 	scissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
 	viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, (float)window->GetWindowWidth(), (float)window->GetWindowHeight());
 	FOV = 60.0f;
+
+	UINT compileFlags = 0;
+
+#if defined(_DEBUG)
+	compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+	ComPtr<ID3DBlob> vertexShaderBlob;
+	ThrowIfFailed(D3DCompileFromFile(L"Shaders\\triangle.vertex.hlsl", nullptr, nullptr, "main", "vs_5_1", compileFlags, 0, &vertexShaderBlob, nullptr));
+
+	//// Load the pixel shader.
+	//ComPtr<ID3DBlob> pixelShaderBlob;
+	//ThrowIfFailed(D3DReadFileToBlob(L"triangle.pixel.cso", &pixelShaderBlob));
+
 }
 
 Renderer::~Renderer()
@@ -135,7 +147,7 @@ void Renderer::CreateDevice()
 	{
 		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
 		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, FALSE);
 
 		// Suppress messages based on their severity level
 		D3D12_MESSAGE_SEVERITY Severities[] =
@@ -161,35 +173,62 @@ void Renderer::CreateDevice()
 #endif
 }
 
-void Renderer::UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12Resource** intermediateBuffer, size_t numberOfElements, size_t elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags)
+void Renderer::LoadContent()
+{
+	// Upload vertex buffer //
+	ComPtr<ID3D12Resource> intermediateVertexBuffer;
+	UpdateBufferResource(&vertexBuffer, &intermediateVertexBuffer, _countof(g_Vertices), 
+		sizeof(VertexPosColor), g_Vertices);
+
+	vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
+	vertexBufferView.SizeInBytes = sizeof(g_Vertices);
+	vertexBufferView.StrideInBytes = sizeof(VertexPosColor);
+
+	// Upload Index Buffer //
+	ComPtr<ID3D12Resource> intermediateIndexBuffer;
+	UpdateBufferResource(&indexBuffer, &intermediateIndexBuffer, _countof(g_Indicies),
+		sizeof(short), g_Indicies);
+
+	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
+	indexBufferView.Format = DXGI_FORMAT_R16_UINT;
+	indexBufferView.SizeInBytes = sizeof(g_Indicies);
+
+	// Create Depth-Stencil view heap
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+	dsvHeapDesc.NumDescriptors = 1;
+	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	ThrowIfFailed(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&DSVHeap)));
+}
+
+void Renderer::UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12Resource** intermediateBuffer, size_t numberOfElements, size_t elementSize, const void* bufferData)
 {
 	if (!bufferData)
 	{
 		assert(false && "Buffer that is trying to be uploaded to GPU memory is NULL");
 	}
 
-	// Size of the entire buffer in bytes
+	// Size of the entire buffer in bytes & properties
 	size_t bufferSize = elementSize * numberOfElements;
+	CD3DX12_RESOURCE_DESC buffer = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
+	CD3DX12_HEAP_PROPERTIES destinationHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	CD3DX12_HEAP_PROPERTIES intermediateHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 
 	// Create a commited resource for the GPU resource
-	ThrowIfFailed(device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags),
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		nullptr,
-		IID_PPV_ARGS(destinationResource)));
 	// This is used to create a resource and an implicit heap that is large enough to store the given resource. This `destinationResource` is also mapped to the implicit heap
+	ThrowIfFailed(device->CreateCommittedResource(&destinationHeap, D3D12_HEAP_FLAG_NONE, &buffer,
+		D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(destinationResource)));
 
 	// Though the heap is created, nothing has been uploaded yet
 	// We create another resource, this time on the GPU's Upload Heap.
 	// This heap is optimized to receive a CPU to GPU write-once only call
 	// Then once it's on the GPU, we can transfer the data from the Upload Heap to the Default heap
-	ThrowIfFailed(device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+	ThrowIfFailed(device->CreateCommittedResource(&intermediateHeap,
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
+		&buffer,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(intermediateBuffer)));
-
 
 	D3D12_SUBRESOURCE_DATA subresourceData = {};
 	subresourceData.pData = bufferData;
