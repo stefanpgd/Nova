@@ -17,7 +17,6 @@ struct VertexShaderOutput
     float4 Color : COLOR;
 };
 
-
 // Here we tell HLSL that the input of our shader program should be a VertexPosColor struct
 // meaning that for every vertex in the buffer we offset by 6 floats or 24 bytes
 VertexShaderOutput main(VertexPosColor IN)
