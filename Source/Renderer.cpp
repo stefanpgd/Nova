@@ -11,15 +11,25 @@ struct VertexPosColor
 	XMFLOAT3 Color;
 };
 
-static VertexPosColor g_Vertices[3] = {
-	{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) },  // 0
-	{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },  // 1
-	{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) },   // 2
+static VertexPosColor g_Vertices[8] = {
+	{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }, // 0
+	{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }, // 1
+	{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }, // 2
+	{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }, // 3
+	{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }, // 4
+	{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }, // 5
+	{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }, // 6
+	{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }  // 7
 };
 
-static short g_Indicies[3] =
+static short g_Indicies[36] =
 {
-	0, 1, 2
+	0, 1, 2, 0, 2, 3,
+	4, 6, 5, 4, 7, 6,
+	4, 5, 1, 4, 1, 0,
+	3, 2, 6, 3, 6, 7,
+	1, 5, 6, 1, 6, 2,
+	4, 0, 3, 4, 3, 7
 };
 
 Renderer::Renderer(std::wstring windowName)
@@ -45,18 +55,57 @@ Renderer::~Renderer()
 
 void Renderer::Render()
 {
+	float angle = static_cast<float>(frameCount * 4.15f);
+	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
+	model = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle)) * XMMatrixTranslation(cos(frameCount * 0.015) * 8.0f, sin(frameCount * 0.005) * 5.0f, 0.0f);
+
+	const XMVECTOR eyePosition = XMVectorSet(0, 0, -10, 1);
+	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
+	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
+	view = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
+
+	float aspectRatio = (float)window->GetWindowWidth() / static_cast<float>(window->GetWindowHeight());
+	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(FOV), aspectRatio, 0.1f, 1000.0f);
+
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
 
 	commandQueue->ResetCommandList(backBufferIndex);
 	ComPtr<ID3D12GraphicsCommandList2> commandList = commandQueue->GetCommandList();
 
+	auto RTV = window->GetCurrentBackBufferRTV();
+	auto DSV = DSVHeap->GetCPUDescriptorHandleForHeapStart();
+
 	CD3DX12_RESOURCE_BARRIER renderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.Get(),
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	commandList->ResourceBarrier(1, &renderBarrier);
 
 	float clearColor[4] = { 0.2f, 0.45f, 0.31f, 1.0f };
-	commandList->ClearRenderTargetView(window->GetCurrentBackBufferRTV(), clearColor, 0, nullptr);
+	commandList->ClearRenderTargetView(RTV, clearColor, 0, nullptr);
+	commandList->ClearDepthStencilView(DSV, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+	commandList->SetPipelineState(pipelineState.Get());
+	// Even though the Root Signature was used to create the PSO, we have to explicitly bind it to the command list as well
+	commandList->SetGraphicsRootSignature(rootSignature.Get());
+
+	// Input-Assembler Settings //
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+	commandList->IASetIndexBuffer(&indexBufferView);
+
+	// Rasterizer Settings //
+	commandList->RSSetViewports(1, &viewport);
+	commandList->RSSetScissorRects(1, &scissorRect);
+
+	// Output-Merger settings //
+	commandList->OMSetRenderTargets(1, &RTV, FALSE, &DSV);
+
+	// Update MVP //
+	XMMATRIX mvp = XMMatrixMultiply(model, view);
+	mvp = XMMatrixMultiply(mvp, projection);
+	commandList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvp, 0);
+
+	commandList->DrawIndexedInstanced(_countof(g_Indicies), 1, 0, 0, 0);
 
 	CD3DX12_RESOURCE_BARRIER presentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.Get(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -68,12 +117,17 @@ void Renderer::Render()
 	// calling 'GetCurrentBackBufferIndex' again, since we've presented and the
 	// current back buffer has now changed.
 	commandQueue->WaitForFenceValue(window->GetCurrentBackBufferIndex());
+
+	frameCount++;
 }
 
 void Renderer::Resize()
 {
 	commandQueue->Flush();
+
 	window->Resize();
+	viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, (float)window->GetWindowWidth(), (float)window->GetWindowHeight());
+	ResizeDepthBuffer();
 }
 
 void Renderer::EnableDebugLayer()
@@ -253,6 +307,8 @@ void Renderer::LoadContent()
 
 	commandQueue->ExecuteCommandList(backBufferIndex);
 	commandQueue->WaitForFenceValue(backBufferIndex);
+
+	ResizeDepthBuffer();
 }
 
 void Renderer::UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12Resource** intermediateBuffer, size_t numberOfElements, size_t elementSize, const void* bufferData)
@@ -291,4 +347,29 @@ void Renderer::UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12
 
 	// Using the info from the subresource data struct, the data will now be copied over to the Upload heap and then the Default Heap to the destination resource.
 	UpdateSubresources(commandQueue->GetCommandList().Get(), *destinationResource, *intermediateBuffer, 0, 0, 1, &subresourceData);
+}
+
+void Renderer::ResizeDepthBuffer()
+{
+	commandQueue->Flush();
+
+	D3D12_CLEAR_VALUE optimizedClearValue = {};
+	optimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+	optimizedClearValue.DepthStencil = { 1.0f, 0 };
+
+	CD3DX12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);;
+	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, window->GetWindowWidth(), window->GetWindowHeight(),
+		1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+
+	ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE,
+		&resourceDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &optimizedClearValue, IID_PPV_ARGS(&depthBuffer)));
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsv = {};
+	dsv.Format = DXGI_FORMAT_D32_FLOAT;
+	dsv.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	dsv.Texture2D.MipSlice = 0;
+	dsv.Flags = D3D12_DSV_FLAG_NONE;
+
+	device->CreateDepthStencilView(depthBuffer.Get(), &dsv,
+		DSVHeap->GetCPUDescriptorHandleForHeapStart());
 }

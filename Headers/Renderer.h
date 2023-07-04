@@ -64,4 +64,6 @@ private:
 
 	unsigned int startWindowWidth = 1280;
 	unsigned int startWindowHeight = 720;
+
+	unsigned int frameCount = 0;
 };
