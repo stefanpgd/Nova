@@ -57,7 +57,11 @@ void DXCommands::WaitForFenceValue(unsigned int currentBackBuffer)
 void DXCommands::Flush(int currentBackBufferIndex)
 {
 	Signal();
-	WaitForFenceValue(currentBackBufferIndex);
+
+	for (int i = 0; i < Window::BackBufferCount; i++)
+	{
+		WaitForFenceValue(i);
+	}
 }
 
 ComPtr<ID3D12CommandQueue> DXCommands::GetCommandQueue()

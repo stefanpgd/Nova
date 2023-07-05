@@ -30,8 +30,6 @@ private:
 	void TransitionResource();
 	void ClearRTV();
 	void ClearDepth();
-	void UpdateBufferResource(ID3D12Resource** targetBuffer, ID3D12Resource** intermediateBuffer, size_t numberOfElements,
-		size_t elementSize, const void* bufferData);
 	void ResizeDepthBuffer();
 
 private:
