@@ -20,7 +20,7 @@ public:
 
 	void Signal();
 	void WaitForFenceValue(unsigned int currentBackBuffer);
-	void Flush();
+	void Flush(int currentBackBufferIndex);
 
 	ComPtr<ID3D12CommandQueue> Get();
 	ComPtr<ID3D12GraphicsCommandList2> GetCommandList();

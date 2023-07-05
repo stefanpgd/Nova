@@ -28,6 +28,8 @@ Window::Window(std::wstring windowName, unsigned int windowWidth, unsigned int w
 	UpdateRenderTargetViews();
 
 	currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
+	scissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
+	viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(windowWidth), static_cast<float>(windowHeight));
 
 	ShowWindow(hWnd, SW_SHOW);
 }
@@ -67,6 +69,8 @@ void Window::Resize()
 
 		currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 		UpdateRenderTargetViews();
+
+		viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(windowWidth), static_cast<float>(windowHeight));
 	}
 }
 
@@ -84,6 +88,16 @@ CD3DX12_CPU_DESCRIPTOR_HANDLE Window::GetCurrentBackBufferRTV()
 {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(RTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, RTVDescriptorSize);
 	return rtv;
+}
+
+const D3D12_VIEWPORT& Window::GetViewport()
+{
+	return viewport;
+}
+
+const D3D12_RECT& Window::GetScissorRect()
+{
+	return scissorRect;
 }
 
 unsigned int Window::GetWindowWidth()

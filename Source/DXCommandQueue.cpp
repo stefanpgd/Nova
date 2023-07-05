@@ -14,7 +14,7 @@ DXCommandQueue::DXCommandQueue(ComPtr<ID3D12Device2> device) : device(device)
 
 DXCommandQueue::~DXCommandQueue()
 {
-	Flush();
+	Flush(0);
 	CloseHandle(fenceEvent);
 }
 
@@ -53,10 +53,10 @@ void DXCommandQueue::WaitForFenceValue(unsigned int currentBackBuffer)
 // We signal first, so we've a new fence value to look out for, then right after we 
 // wait until we've reached that fence value. Because this is the newest fence value, all other
 // command lists that were running must've been finished before the new fence value has been reached.
-void DXCommandQueue::Flush()
+void DXCommandQueue::Flush(int currentBackBufferIndex)
 {
 	Signal();
-	WaitForFenceValue(fenceValue);
+	WaitForFenceValue(currentBackBufferIndex);
 }
 
 ComPtr<ID3D12CommandQueue> DXCommandQueue::Get()

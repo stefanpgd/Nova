@@ -13,7 +13,7 @@ using namespace Microsoft::WRL;
 
 /// <summary>
 /// The window is responsible for creating the window and the swapchain.
-/// The window also manages presenting and resizing.
+/// The window also manages presenting and resizing. It also creates the viewport & scissor rect used for the rasterizer stages
 /// </summary>
 class Window
 {
@@ -28,6 +28,8 @@ public:
 	unsigned int GetCurrentBackBufferIndex();
 	ComPtr<ID3D12Resource> GetCurrentBackBuffer();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCurrentBackBufferRTV();
+	const D3D12_VIEWPORT& GetViewport();
+	const D3D12_RECT& GetScissorRect();
 
 	unsigned int GetWindowWidth();
 	unsigned int GetWindowHeight();
@@ -64,4 +66,8 @@ private:
 
 	ComPtr<ID3D12DescriptorHeap> RTVDescriptorHeap;
 	UINT RTVDescriptorSize;
+
+	// Rasterizer Objects //
+	D3D12_VIEWPORT viewport;
+	D3D12_RECT scissorRect;
 };

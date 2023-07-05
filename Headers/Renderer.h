@@ -26,7 +26,6 @@ public:
 
 private:
 	void EnableDebugLayer();
-	void CreateDevice();
 
 	void LoadContent();
 	void TransitionResource();
@@ -39,7 +38,6 @@ private:
 private:
 	Window* window;
 	DXCommandQueue* commandQueue;
-	ComPtr<ID3D12Device2> device;
 
 	ComPtr<ID3D12Resource> vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
@@ -48,13 +46,9 @@ private:
 	D3D12_INDEX_BUFFER_VIEW indexBufferView;
 
 	ComPtr<ID3D12Resource> depthBuffer;
-	ComPtr<ID3D12DescriptorHeap> DSVHeap;
 
 	ComPtr<ID3D12RootSignature> rootSignature;
 	ComPtr<ID3D12PipelineState> pipelineState;
-
-	D3D12_VIEWPORT viewport;
-	D3D12_RECT scissorRect;
 
 	float FOV;
 
