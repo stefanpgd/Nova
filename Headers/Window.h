@@ -18,8 +18,7 @@ using namespace Microsoft::WRL;
 class Window
 {
 public:
-	Window(std::wstring windowName, unsigned int windowWidth, unsigned int windowHeight, 
-		ComPtr<ID3D12Device2> device, ComPtr<ID3D12CommandQueue> commandQueue);
+	Window(std::wstring windowName, unsigned int windowWidth, unsigned int windowHeight);
 
 	void Present();
 	void Resize();
@@ -44,10 +43,6 @@ public:
 	static constexpr unsigned int BackBufferCount = 3;
 
 private:
-	// Temporary reference to device and command queue until we've global accessors //
-	ComPtr<ID3D12Device2> device;
-	ComPtr<ID3D12CommandQueue> commandQueue;
-
 	// Window settings //
 	std::wstring windowName;
 	unsigned int windowWidth;

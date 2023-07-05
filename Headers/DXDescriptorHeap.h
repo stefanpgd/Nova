@@ -12,14 +12,16 @@ public:
 	DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, unsigned int amountOfDescriptors,
 		D3D12_DESCRIPTOR_HEAP_FLAGS flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 
-	void GetCPUHandleAt(unsigned int index);
-	void GetGPUHandleAt(unsigned int index);
+	ComPtr<ID3D12DescriptorHeap> Get();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCPUHandleAt(unsigned int index);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGPUHandleAt(unsigned int index);
 
-	unsigned int GetNextAvailableHandle();
+	unsigned int GetNextAvailableIndex();
 
 private:
 	ComPtr<ID3D12DescriptorHeap> heap;
 
+	unsigned int currentDescriptorIndex = 0;
 	unsigned int maxDescriptors;
 	unsigned int descriptorByteSize;
 };

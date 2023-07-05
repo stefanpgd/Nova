@@ -1,5 +1,4 @@
 #pragma once
-#include "Window.h"
 #include <string>
 
 #include <wrl.h>
@@ -7,11 +6,10 @@
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
-
 #include <d3dx12.h>
 
-class DXDevice;
-class DXCommands;
+class Window;
+class DXDescriptorHeap;
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -38,6 +36,8 @@ private:
 
 private:
 	Window* window;
+	DXDescriptorHeap* DSVHeap;
+
 	ComPtr<ID3D12Resource> vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 
@@ -60,9 +60,3 @@ private:
 
 	unsigned int frameCount = 0;
 };
-
-namespace RendererInternal
-{
-	DXDevice* device = nullptr;
-	DXCommands* commands = nullptr;
-}

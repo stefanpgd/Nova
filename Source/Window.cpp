@@ -1,13 +1,15 @@
 #include "Window.h"
 #include "DXUtilities.h"
+#include "DXAccess.h"
+#include "DXDevice.h"
+#include "DXCommands.h"
 #include "resource.h"
 
 #include <cassert>
 #include <algorithm>
 
-Window::Window(std::wstring windowName, unsigned int windowWidth, unsigned int windowHeight, 
-	ComPtr<ID3D12Device2> device, ComPtr<ID3D12CommandQueue> commandQueue) :
-	windowName(windowName), windowWidth(windowWidth), windowHeight(windowHeight), device(device), commandQueue(commandQueue)
+Window::Window(std::wstring windowName, unsigned int windowWidth, unsigned int windowHeight) :
+	windowName(windowName), windowWidth(windowWidth), windowHeight(windowHeight)
 {
 	// Check for Tearing Support //
 	ComPtr<IDXGIFactory5> factory5;
@@ -161,6 +163,7 @@ void Window::CreateSwapChain()
 	swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	swapChainDesc.Flags = tearingSupported ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
 
+	ComPtr<ID3D12CommandQueue> commandQueue = DXAccess::GetCommands()->GetCommandQueue();
 	ComPtr<IDXGISwapChain1> swapChain1;
 	ThrowIfFailed(factory->CreateSwapChainForHwnd(commandQueue.Get(), hWnd, &swapChainDesc, nullptr, nullptr, &swapChain1));
 	ThrowIfFailed(factory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER));
@@ -173,6 +176,7 @@ void Window::CreateRTVDescriptorHeap()
 	description.NumDescriptors = BackBufferCount;
 	description.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 	ThrowIfFailed(device->CreateDescriptorHeap(&description, IID_PPV_ARGS(&RTVDescriptorHeap)));
 	RTVDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 }
@@ -181,6 +185,7 @@ void Window::CreateRTVDescriptorHeap()
 // Instead we just update the RTVs based on the new descriptions of the resources (back buffer textures) in the swapchain.
 void Window::UpdateRenderTargetViews()
 {
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	for (int i = 0; i < BackBufferCount; ++i)

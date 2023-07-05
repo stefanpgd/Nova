@@ -1,13 +1,14 @@
 #include "Renderer.h"
+
 #include "DXUtilities.h"
+#include "DXAccess.h"
 #include "DXDevice.h"
 #include "DXCommands.h"
-#include "DXAccess.h"
+#include "DXDescriptorHeap.h"
+#include "Window.h"
 
 #include <cassert>
 #include <chrono>
-
-using namespace RendererInternal;
 
 struct VertexPosColor
 {
@@ -36,6 +37,13 @@ static short g_Indicies[36] =
 	4, 0, 3, 4, 3, 7
 };
 
+namespace RendererInternal
+{
+	DXDevice* device = nullptr;
+	DXCommands* commands = nullptr;
+}
+using namespace RendererInternal;
+
 Renderer::Renderer(std::wstring windowName)
 {
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -43,7 +51,8 @@ Renderer::Renderer(std::wstring windowName)
 
 	device = new DXDevice();
 	commands = new DXCommands();
-	window = new Window(windowName, startWindowWidth, startWindowHeight, device, commandQueue->Get());
+	DSVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1);
+	window = new Window(windowName, startWindowWidth, startWindowHeight);
 
 	FOV = 60.0f; // Move to a camera class //
 
@@ -74,10 +83,10 @@ void Renderer::Render()
 	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
 
 	commands->ResetCommandList(backBufferIndex);
-	ComPtr<ID3D12GraphicsCommandList2> commandList = commands->GetList();
+	ComPtr<ID3D12GraphicsCommandList2> commandList = commands->GetCommandList();
 
 	auto RTV = window->GetCurrentBackBufferRTV();
-	auto DSV = DSVHeap->GetCPUDescriptorHandleForHeapStart();
+	auto DSV = DSVHeap->GetCPUHandleAt(0);
 
 	CD3DX12_RESOURCE_BARRIER renderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.Get(),
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -170,7 +179,7 @@ void Renderer::LoadContent()
 	dsvHeapDesc.NumDescriptors = 1;
 	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	ThrowIfFailed(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&DSVHeap)));
+	ThrowIfFailed(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&DSVHeap->Get())));
 
 	UINT compileFlags = 0;
 
@@ -250,6 +259,8 @@ void Renderer::LoadContent()
 
 void Renderer::UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12Resource** intermediateBuffer, size_t numberOfElements, size_t elementSize, const void* bufferData)
 {
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
+
 	if (!bufferData)
 	{
 		assert(false && "Buffer that is trying to be uploaded to GPU memory is NULL");
@@ -288,7 +299,8 @@ void Renderer::UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12
 
 void Renderer::ResizeDepthBuffer()
 {
-	commandQueue->Flush(window->GetCurrentBackBufferIndex());
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
+	commands->Flush(window->GetCurrentBackBufferIndex());
 
 	D3D12_CLEAR_VALUE optimizedClearValue = {};
 	optimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
@@ -308,25 +320,27 @@ void Renderer::ResizeDepthBuffer()
 	dsv.Flags = D3D12_DSV_FLAG_NONE;
 
 	device->CreateDepthStencilView(depthBuffer.Get(), &dsv,
-		DSVHeap->GetCPUDescriptorHandleForHeapStart());
+		DSVHeap->GetCPUHandleAt(0));
 }
 
-DXDevice* DXAccess::GetDevice()
+ComPtr<ID3D12Device2> DXAccess::GetDevice()
 {
-	if (RendererInternal::device)
+	if (device)
 	{
-		return RendererInternal::device;
+		return device->Get();
 	}
 
 	assert(false && "DXDevice hasn't been initialized");
+	return nullptr;
 }
 
 DXCommands* DXAccess::GetCommands()
 {
-	if (RendererInternal::commands)
+	if (commands)
 	{
-		return RendererInternal::commands;
+		return commands;
 	}
 
 	assert(false && "DXCommands hasn't been initialized");
+	return nullptr;
 }

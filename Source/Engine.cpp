@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "Renderer.h"
 #include "resource.h"
 
 #include <cassert>
