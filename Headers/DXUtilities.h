@@ -11,6 +11,7 @@
 
 #include "DXAccess.h"
 #include "DXCommands.h"
+#include <d3dx12.h>
 
 inline void ThrowIfFailed(HRESULT hr)
 {
@@ -55,8 +56,15 @@ inline void UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12Res
 	D3D12_SUBRESOURCE_DATA subresourceData = {};
 	subresourceData.pData = bufferData;
 	subresourceData.RowPitch = bufferSize;
-	subresourceData.SlicePitch = bufferSize; // Double check if 1 works here as well?
+	subresourceData.SlicePitch = bufferSize;
 
 	// Using the info from the subresource data struct, the data will now be copied over to the Upload heap and then the Default Heap to the destination resource.
 	UpdateSubresources(commands->GetCommandList().Get(), *destinationResource, *intermediateBuffer, 0, 0, 1, &subresourceData);
+}
+
+inline void TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
+{
+	ComPtr<ID3D12GraphicsCommandList2> commandList = DXAccess::GetCommands()->GetCommandList();
+	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource, before, after);
+	commandList->ResourceBarrier(1, &barrier);
 }

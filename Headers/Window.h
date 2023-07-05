@@ -12,8 +12,8 @@ using namespace Microsoft::WRL;
 
 
 /// <summary>
-/// The window is responsible for creating the window and the swapchain.
-/// The window also manages presenting and resizing. It also creates the viewport & scissor rect used for the rasterizer stages
+/// The window is responsible for creating the window, the swapchain.
+/// The window also manages presenting and resizing.
 /// </summary>
 class Window
 {

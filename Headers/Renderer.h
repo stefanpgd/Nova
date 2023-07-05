@@ -27,7 +27,6 @@ private:
 	void EnableDebugLayer();
 
 	void LoadContent();
-	void TransitionResource();
 	void ClearRTV();
 	void ClearDepth();
 	void ResizeDepthBuffer();

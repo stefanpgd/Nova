@@ -19,8 +19,8 @@ public:
 	void ExecuteCommandList(int currentBackBufferIndex);
 
 	void Signal();
+	void Flush();
 	void WaitForFenceValue(unsigned int currentBackBuffer);
-	void Flush(int currentBackBufferIndex);
 
 	ComPtr<ID3D12CommandQueue> GetCommandQueue();
 	ComPtr<ID3D12GraphicsCommandList2> GetCommandList();

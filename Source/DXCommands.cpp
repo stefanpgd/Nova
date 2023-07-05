@@ -15,7 +15,7 @@ DXCommands::DXCommands()
 
 DXCommands::~DXCommands()
 {
-	Flush(0); // placeholder //
+	Flush(); 
 	CloseHandle(fenceEvent);
 }
 
@@ -51,10 +51,10 @@ void DXCommands::WaitForFenceValue(unsigned int currentBackBuffer)
 	}
 }
 
-// We signal first, so we've a new fence value to look out for, then right after we 
-// wait until we've reached that fence value. Because this is the newest fence value, all other
-// command lists that were running must've been finished before the new fence value has been reached.
-void DXCommands::Flush(int currentBackBufferIndex)
+/// <summary>
+/// Forces the CPU to stall until every command list has been finished executing
+/// </summary>
+void DXCommands::Flush()
 {
 	Signal();
 

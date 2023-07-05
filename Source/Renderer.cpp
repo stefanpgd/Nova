@@ -61,12 +61,13 @@ Renderer::Renderer(std::wstring windowName)
 
 Renderer::~Renderer()
 {
-	commands->Flush(window->GetCurrentBackBufferIndex());
+	commands->Flush();
 	delete commands;
 }
 
 void Renderer::Render()
 {
+	// Placeholder until we've a proper update //
 	float angle = static_cast<float>(frameCount * 4.15f);
 	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
 	model = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle)) * XMMatrixTranslation(cos(frameCount * 0.015) * 8.0f, sin(frameCount * 0.005) * 5.0f, 0.0f);
@@ -79,55 +80,53 @@ void Renderer::Render()
 	float aspectRatio = (float)window->GetWindowWidth() / static_cast<float>(window->GetWindowHeight());
 	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(FOV), aspectRatio, 0.1f, 1000.0f);
 
+	XMMATRIX mvp = XMMatrixMultiply(model, view);
+	mvp = XMMatrixMultiply(mvp, projection);
+
+	// Grab all relevant objects for the draw call //
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
-
-	commands->ResetCommandList(backBufferIndex);
 	ComPtr<ID3D12GraphicsCommandList2> commandList = commands->GetCommandList();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE renderTarget = window->GetCurrentBackBufferRTV();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE depthBuffer = DSVHeap->GetCPUHandleAt(0);
 
-	auto RTV = window->GetCurrentBackBufferRTV();
-	auto DSV = DSVHeap->GetCPUHandleAt(0);
+	// 1. Reset Command Allocator & List, afterwards prepare Render Target //
+	commands->ResetCommandList(backBufferIndex);
+	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-	CD3DX12_RESOURCE_BARRIER renderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.Get(),
-		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	commandList->ResourceBarrier(1, &renderBarrier);
-
+	// 2. Clear Screen //
 	float clearColor[4] = { 0.2f, 0.45f, 0.31f, 1.0f };
-	commandList->ClearRenderTargetView(RTV, clearColor, 0, nullptr);
-	commandList->ClearDepthStencilView(DSV, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	commandList->ClearRenderTargetView(renderTarget, clearColor, 0, nullptr);
+	commandList->ClearDepthStencilView(depthBuffer, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	commandList->SetPipelineState(pipelineState.Get());
-	// Even though the Root Signature was used to create the PSO, we have to explicitly bind it to the command list as well
-	commandList->SetGraphicsRootSignature(rootSignature.Get());
-
-	// Input-Assembler Settings //
+	// 3. Input-Assembler Settings //
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 	commandList->IASetIndexBuffer(&indexBufferView);
 
-	// Rasterizer Settings //
+	// 4. Rasterizer Settings //
 	commandList->RSSetViewports(1, &window->GetViewport());
 	commandList->RSSetScissorRects(1, &window->GetScissorRect());
 
-	// Output-Merger settings //
-	commandList->OMSetRenderTargets(1, &RTV, FALSE, &DSV);
+	// 5. Output-Merger Settings //
+	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &depthBuffer);
 
-	// Update MVP //
-	XMMATRIX mvp = XMMatrixMultiply(model, view);
-	mvp = XMMatrixMultiply(mvp, projection);
+	// 6. Bind Relevant Pipeline with the correct Root Signature //
+	commandList->SetPipelineState(pipelineState.Get());
+	commandList->SetGraphicsRootSignature(rootSignature.Get());
+
+	// 7. Set Constants and Views for the pipeline  //
 	commandList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvp, 0);
 
+	// 8. Draw call //
 	commandList->DrawIndexedInstanced(_countof(g_Indicies), 1, 0, 0, 0);
 
-	CD3DX12_RESOURCE_BARRIER presentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.Get(),
-		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	commandList->ResourceBarrier(1, &presentBarrier);
-
+	// 9. Transition to a Present state, then execute the commands and present the next back buffer //
+	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	commands->ExecuteCommandList(backBufferIndex);
 	window->Present();
 
-	// calling 'GetCurrentBackBufferIndex' again, since we've presented and the
-	// current back buffer has now changed.
+	// 10. Before we start with the next draw call, ensure that the next frame isn't still in-flight //
 	commands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
 
 	frameCount++;
@@ -135,7 +134,7 @@ void Renderer::Render()
 
 void Renderer::Resize()
 {
-	commands->Flush(window->GetCurrentBackBufferIndex());
+	commands->Flush();
 	window->Resize();
 	ResizeDepthBuffer();
 }
@@ -260,7 +259,7 @@ void Renderer::LoadContent()
 void Renderer::ResizeDepthBuffer()
 {
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
-	commands->Flush(window->GetCurrentBackBufferIndex());
+	commands->Flush();
 
 	D3D12_CLEAR_VALUE optimizedClearValue = {};
 	optimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
