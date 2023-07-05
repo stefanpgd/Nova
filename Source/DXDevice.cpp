@@ -1,6 +1,7 @@
 #include "DXDevice.h"
+#include "DXUtilities.h"
+
 #include <dxgi1_6.h>
-#include "Utilities.h"
 
 DXDevice::DXDevice()
 {

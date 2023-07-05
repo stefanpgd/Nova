@@ -10,7 +10,8 @@
 
 #include <d3dx12.h>
 
-#include "DXCommandQueue.h"
+class DXDevice;
+class DXCommands;
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -31,14 +32,12 @@ private:
 	void TransitionResource();
 	void ClearRTV();
 	void ClearDepth();
-	void UpdateBufferResource(ID3D12Resource** targetBuffer, ID3D12Resource** intermediateBuffer, size_t numberOfElements, 
+	void UpdateBufferResource(ID3D12Resource** targetBuffer, ID3D12Resource** intermediateBuffer, size_t numberOfElements,
 		size_t elementSize, const void* bufferData);
 	void ResizeDepthBuffer();
 
 private:
 	Window* window;
-	DXCommandQueue* commandQueue;
-
 	ComPtr<ID3D12Resource> vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 
@@ -61,3 +60,9 @@ private:
 
 	unsigned int frameCount = 0;
 };
+
+namespace RendererInternal
+{
+	DXDevice* device = nullptr;
+	DXCommands* commands = nullptr;
+}

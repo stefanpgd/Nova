@@ -1,10 +1,11 @@
-#include "DXCommandQueue.h"
-#include "Utilities.h"
+#include "DXCommands.h"
+#include "DXUtilities.h"
+#include "DXAccess.h"
 
 #include <cassert>
 #include <chrono>
 
-DXCommandQueue::DXCommandQueue(ComPtr<ID3D12Device2> device) : device(device)
+DXCommands::DXCommands()
 {
 	CreateCommandQueue();
 	CreateCommandAllocators();
@@ -12,19 +13,19 @@ DXCommandQueue::DXCommandQueue(ComPtr<ID3D12Device2> device) : device(device)
 	CreateSynchronizationObjects();
 }
 
-DXCommandQueue::~DXCommandQueue()
+DXCommands::~DXCommands()
 {
-	Flush(0);
+	Flush(0); // placeholder //
 	CloseHandle(fenceEvent);
 }
 
-void DXCommandQueue::ResetCommandList(int currentBackBufferIndex)
+void DXCommands::ResetCommandList(int currentBackBufferIndex)
 {
 	commandAllocators[currentBackBufferIndex]->Reset();
 	commandList->Reset(commandAllocators[currentBackBufferIndex].Get(), nullptr);
 }
 
-void DXCommandQueue::ExecuteCommandList(int currentBackBufferIndex)
+void DXCommands::ExecuteCommandList(int currentBackBufferIndex)
 {
 	ThrowIfFailed(commandList->Close());
 
@@ -35,13 +36,13 @@ void DXCommandQueue::ExecuteCommandList(int currentBackBufferIndex)
 	frameFenceValues[currentBackBufferIndex] = fenceValue;
 }
 
-void DXCommandQueue::Signal()
+void DXCommands::Signal()
 {
 	fenceValue++;
 	ThrowIfFailed(commandQueue->Signal(fence.Get(), fenceValue));
 }
 
-void DXCommandQueue::WaitForFenceValue(unsigned int currentBackBuffer)
+void DXCommands::WaitForFenceValue(unsigned int currentBackBuffer)
 {
 	if (fence->GetCompletedValue() < frameFenceValues[currentBackBuffer])
 	{
@@ -53,23 +54,23 @@ void DXCommandQueue::WaitForFenceValue(unsigned int currentBackBuffer)
 // We signal first, so we've a new fence value to look out for, then right after we 
 // wait until we've reached that fence value. Because this is the newest fence value, all other
 // command lists that were running must've been finished before the new fence value has been reached.
-void DXCommandQueue::Flush(int currentBackBufferIndex)
+void DXCommands::Flush(int currentBackBufferIndex)
 {
 	Signal();
 	WaitForFenceValue(currentBackBufferIndex);
 }
 
-ComPtr<ID3D12CommandQueue> DXCommandQueue::Get()
+ComPtr<ID3D12CommandQueue> DXCommands::GetCommandQueue()
 {
 	return commandQueue;
 }
 
-ComPtr<ID3D12GraphicsCommandList2> DXCommandQueue::GetCommandList()
+ComPtr<ID3D12GraphicsCommandList2> DXCommands::GetCommandList()
 {
 	return commandList;
 }
 
-void DXCommandQueue::CreateCommandQueue()
+void DXCommands::CreateCommandQueue()
 {
 	D3D12_COMMAND_QUEUE_DESC description = {};
 	description.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -77,11 +78,13 @@ void DXCommandQueue::CreateCommandQueue()
 	description.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	description.NodeMask = 0;
 
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 	ThrowIfFailed(device->CreateCommandQueue(&description, IID_PPV_ARGS(&commandQueue)));
 }
 
-void DXCommandQueue::CreateCommandList()
+void DXCommands::CreateCommandList()
 {
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 	ThrowIfFailed(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
 		commandAllocators[0].Get(), nullptr, IID_PPV_ARGS(&commandList)));
 
@@ -90,19 +93,23 @@ void DXCommandQueue::CreateCommandList()
 	ThrowIfFailed(commandList->Close());
 }
 
-void DXCommandQueue::CreateCommandAllocators()
+void DXCommands::CreateCommandAllocators()
 {
 	// Command Allocator //
 	for (int i = 0; i < Window::BackBufferCount; ++i)
 	{
 		ComPtr<ID3D12CommandAllocator> commandAllocator;
+
+		ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator)));
 		commandAllocators[i] = commandAllocator;
 	}
 }
 
-void DXCommandQueue::CreateSynchronizationObjects()
+void DXCommands::CreateSynchronizationObjects()
 {
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
+
 	// Fence //
 	ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
 

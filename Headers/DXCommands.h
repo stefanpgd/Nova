@@ -9,11 +9,11 @@ using namespace Microsoft::WRL;
 #include <cstdint>
 #include <queue>
 
-class DXCommandQueue
+class DXCommands
 {
 public:
-	DXCommandQueue(ComPtr<ID3D12Device2> device);
-	~DXCommandQueue();
+	DXCommands();
+	~DXCommands();
 
 	void ResetCommandList(int currentBackBufferIndex);
 	void ExecuteCommandList(int currentBackBufferIndex);
@@ -22,7 +22,7 @@ public:
 	void WaitForFenceValue(unsigned int currentBackBuffer);
 	void Flush(int currentBackBufferIndex);
 
-	ComPtr<ID3D12CommandQueue> Get();
+	ComPtr<ID3D12CommandQueue> GetCommandQueue();
 	ComPtr<ID3D12GraphicsCommandList2> GetCommandList();
 
 private:
@@ -32,8 +32,6 @@ private:
 	void CreateSynchronizationObjects();
 
 private:
-	ComPtr<ID3D12Device2> device;
-
 	ComPtr<ID3D12CommandQueue> commandQueue;
 	ComPtr<ID3D12GraphicsCommandList2> commandList;
 	ComPtr<ID3D12CommandAllocator> commandAllocators[Window::BackBufferCount];

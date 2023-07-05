@@ -1,11 +1,13 @@
 #include "Renderer.h"
-#include "Utilities.h"
-#include "DXCommandQueue.h"
-
+#include "DXUtilities.h"
+#include "DXDevice.h"
+#include "DXCommands.h"
 #include "DXAccess.h"
 
 #include <cassert>
 #include <chrono>
+
+using namespace RendererInternal;
 
 struct VertexPosColor
 {
@@ -39,8 +41,8 @@ Renderer::Renderer(std::wstring windowName)
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 	EnableDebugLayer();
 
-	CreateDevice();
-	commandQueue = new DXCommandQueue(device);
+	device = new DXDevice();
+	commands = new DXCommands();
 	window = new Window(windowName, startWindowWidth, startWindowHeight, device, commandQueue->Get());
 
 	FOV = 60.0f; // Move to a camera class //
@@ -50,8 +52,8 @@ Renderer::Renderer(std::wstring windowName)
 
 Renderer::~Renderer()
 {
-	commandQueue->Flush(window->GetCurrentBackBufferIndex());
-	delete commandQueue;
+	commands->Flush(window->GetCurrentBackBufferIndex());
+	delete commands;
 }
 
 void Renderer::Render()
@@ -71,8 +73,8 @@ void Renderer::Render()
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
 
-	commandQueue->ResetCommandList(backBufferIndex);
-	ComPtr<ID3D12GraphicsCommandList2> commandList = commandQueue->GetCommandList();
+	commands->ResetCommandList(backBufferIndex);
+	ComPtr<ID3D12GraphicsCommandList2> commandList = commands->GetList();
 
 	auto RTV = window->GetCurrentBackBufferRTV();
 	auto DSV = DSVHeap->GetCPUDescriptorHandleForHeapStart();
@@ -112,19 +114,19 @@ void Renderer::Render()
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	commandList->ResourceBarrier(1, &presentBarrier);
 
-	commandQueue->ExecuteCommandList(backBufferIndex);
+	commands->ExecuteCommandList(backBufferIndex);
 	window->Present();
 
 	// calling 'GetCurrentBackBufferIndex' again, since we've presented and the
 	// current back buffer has now changed.
-	commandQueue->WaitForFenceValue(window->GetCurrentBackBufferIndex());
+	commands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
 
 	frameCount++;
 }
 
 void Renderer::Resize()
 {
-	commandQueue->Flush(window->GetCurrentBackBufferIndex());
+	commands->Flush(window->GetCurrentBackBufferIndex());
 	window->Resize();
 	ResizeDepthBuffer();
 }
@@ -140,8 +142,10 @@ void Renderer::EnableDebugLayer()
 
 void Renderer::LoadContent()
 {
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
+
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
-	commandQueue->ResetCommandList(backBufferIndex);
+	commands->ResetCommandList(backBufferIndex);
 
 	// Upload vertex buffer //
 	ComPtr<ID3D12Resource> intermediateVertexBuffer;
@@ -238,8 +242,8 @@ void Renderer::LoadContent()
 
 	ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&pipelineState)));
 
-	commandQueue->ExecuteCommandList(backBufferIndex);
-	commandQueue->WaitForFenceValue(backBufferIndex);
+	commands->ExecuteCommandList(backBufferIndex);
+	commands->WaitForFenceValue(backBufferIndex);
 
 	ResizeDepthBuffer();
 }
@@ -279,7 +283,7 @@ void Renderer::UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12
 	subresourceData.SlicePitch = bufferSize; // Double check if 1 works here as well?
 
 	// Using the info from the subresource data struct, the data will now be copied over to the Upload heap and then the Default Heap to the destination resource.
-	UpdateSubresources(commandQueue->GetCommandList().Get(), *destinationResource, *intermediateBuffer, 0, 0, 1, &subresourceData);
+	UpdateSubresources(commands->GetCommandList().Get(), *destinationResource, *intermediateBuffer, 0, 0, 1, &subresourceData);
 }
 
 void Renderer::ResizeDepthBuffer()
@@ -309,12 +313,20 @@ void Renderer::ResizeDepthBuffer()
 
 DXDevice* DXAccess::GetDevice()
 {
-	if (device)
+	if (RendererInternal::device)
 	{
-		return device;
+		return RendererInternal::device;
 	}
-	else
-	{
 
+	assert(false && "DXDevice hasn't been initialized");
+}
+
+DXCommands* DXAccess::GetCommands()
+{
+	if (RendererInternal::commands)
+	{
+		return RendererInternal::commands;
 	}
+
+	assert(false && "DXCommands hasn't been initialized");
 }

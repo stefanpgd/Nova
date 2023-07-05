@@ -143,7 +143,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\DXDevice.cpp" />
-    <ClCompile Include="Source\DXCommandQueue.cpp" />
+    <ClCompile Include="Source\DXCommands.cpp" />
     <ClCompile Include="Source\DXDescriptorHeap.cpp" />
     <ClCompile Include="Source\Engine.cpp" />
     <ClCompile Include="Source\Renderer.cpp" />
@@ -154,11 +154,11 @@
     <ClInclude Include="Dependencies\Microsoft\d3dx12.h" />
     <ClInclude Include="Headers\DXDevice.h" />
     <ClInclude Include="Headers\DXAccess.h" />
-    <ClInclude Include="Headers\DXCommandQueue.h" />
+    <ClInclude Include="Headers\DXCommands.h" />
     <ClInclude Include="Headers\DXDescriptorHeap.h" />
     <ClInclude Include="Headers\Engine.h" />
     <ClInclude Include="Headers\Renderer.h" />
-    <ClInclude Include="Headers\Utilities.h" />
+    <ClInclude Include="Headers\DXUtilities.h" />
     <ClInclude Include="Headers\Window.h" />
     <ClInclude Include="Headers\resource.h" />
   </ItemGroup>

@@ -27,7 +27,7 @@
     <ClCompile Include="Source\Engine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\DXCommandQueue.cpp">
+    <ClCompile Include="Source\DXCommands.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\DXDescriptorHeap.cpp">
@@ -44,7 +44,7 @@
     <ClInclude Include="Headers\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Headers\Utilities.h">
+    <ClInclude Include="Headers\DXUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Headers\resource.h">
@@ -53,7 +53,7 @@
     <ClInclude Include="Headers\Engine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Headers\DXCommandQueue.h">
+    <ClInclude Include="Headers\DXCommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Dependencies\Microsoft\d3dx12.h">

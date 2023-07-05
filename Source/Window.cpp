@@ -1,5 +1,5 @@
 #include "Window.h"
-#include "Utilities.h"
+#include "DXUtilities.h"
 #include "resource.h"
 
 #include <cassert>
