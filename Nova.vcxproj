@@ -151,6 +151,7 @@
     <ClCompile Include="Dependencies\ImGui\imgui_impl_win32.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui_tables.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="Source\DXPipeline.cpp" />
     <ClCompile Include="Source\DXDevice.cpp" />
     <ClCompile Include="Source\DXCommands.cpp" />
     <ClCompile Include="Source\DXDescriptorHeap.cpp" />
@@ -168,6 +169,7 @@
     <ClInclude Include="Dependencies\ImGui\imstb_rectpack.h" />
     <ClInclude Include="Dependencies\ImGui\imstb_textedit.h" />
     <ClInclude Include="Dependencies\ImGui\imstb_truetype.h" />
+    <ClInclude Include="Headers\DXPipeline.h" />
     <ClInclude Include="Headers\DXDevice.h" />
     <ClInclude Include="Headers\DXAccess.h" />
     <ClInclude Include="Headers\DXCommands.h" />

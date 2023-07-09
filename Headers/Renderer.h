@@ -10,6 +10,7 @@
 
 class Window;
 class DXDescriptorHeap;
+class DXPipeline;
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -31,6 +32,7 @@ private:
 	Window* window;
 	DXDescriptorHeap* DSVHeap;
 	DXDescriptorHeap* CBVHeap;
+	DXPipeline* pipeline;
 
 	ComPtr<ID3D12Resource> vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
@@ -39,9 +41,6 @@ private:
 	D3D12_INDEX_BUFFER_VIEW indexBufferView;
 
 	ComPtr<ID3D12Resource> depthBuffer;
-
-	ComPtr<ID3D12RootSignature> rootSignature;
-	ComPtr<ID3D12PipelineState> pipelineState;
 
 	float FOV;
 
