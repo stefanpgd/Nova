@@ -24,16 +24,13 @@ public:
 	void Resize();
 
 private:
-	void EnableDebugLayer();
-
 	void LoadContent();
-	void ClearRTV();
-	void ClearDepth();
 	void ResizeDepthBuffer();
 
 private:
 	Window* window;
 	DXDescriptorHeap* DSVHeap;
+	DXDescriptorHeap* CBVHeap;
 
 	ComPtr<ID3D12Resource> vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;

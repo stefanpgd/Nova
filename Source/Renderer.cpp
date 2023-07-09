@@ -10,6 +10,10 @@
 #include <cassert>
 #include <chrono>
 
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx12.h"
+
 struct VertexPosColor
 {
 	XMFLOAT3 Position;
@@ -19,12 +23,12 @@ struct VertexPosColor
 static VertexPosColor g_Vertices[8] = {
 	{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }, // 0
 	{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }, // 1
-	{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }, // 2
-	{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }, // 3
+	{ XMFLOAT3( 1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }, // 2
+	{ XMFLOAT3( 1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }, // 3
 	{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }, // 4
 	{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }, // 5
-	{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }, // 6
-	{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }  // 7
+	{ XMFLOAT3( 1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }, // 6
+	{ XMFLOAT3( 1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }  // 7
 };
 
 static short g_Indicies[36] =
@@ -47,16 +51,26 @@ using namespace RendererInternal;
 Renderer::Renderer(std::wstring windowName)
 {
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-	EnableDebugLayer();
 
 	device = new DXDevice();
 	commands = new DXCommands();
 	DSVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1);
+	CBVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 100, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	window = new Window(windowName, startWindowWidth, startWindowHeight);
 
 	FOV = 60.0f; // Move to a camera class //
 
 	LoadContent();
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    
+
+	ImGui::StyleColorsDark();
+	ImGui_ImplWin32_Init(window->GetHWND());
+	ImGui_ImplDX12_Init(device->GetAddress(), Window::BackBufferCount, DXGI_FORMAT_R8G8B8A8_UNORM,
+		CBVHeap->GetAddress(), CBVHeap->GetCPUHandleAt(0), CBVHeap->GetGPUHandleAt(0));
 }
 
 Renderer::~Renderer()
@@ -67,6 +81,14 @@ Renderer::~Renderer()
 
 void Renderer::Render()
 {
+	ImGui_ImplDX12_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	ImGui::ShowDemoWindow();
+
+	ImGui::Render();
+
 	// Placeholder until we've a proper update //
 	float angle = static_cast<float>(frameCount * 4.15f);
 	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
@@ -121,6 +143,11 @@ void Renderer::Render()
 	// 8. Draw call //
 	commandList->DrawIndexedInstanced(_countof(g_Indicies), 1, 0, 0, 0);
 
+	ID3D12DescriptorHeap* heaps[] = { CBVHeap->GetAddress() };
+
+	commandList->SetDescriptorHeaps(1, heaps);
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
+
 	// 9. Transition to a Present state, then execute the commands and present the next back buffer //
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	commands->ExecuteCommandList(backBufferIndex);
@@ -139,15 +166,6 @@ void Renderer::Resize()
 	ResizeDepthBuffer();
 }
 
-void Renderer::EnableDebugLayer()
-{
-#if defined (_DEBUG)
-	ComPtr<ID3D12Debug> debugInterface;
-	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)));
-	debugInterface->EnableDebugLayer();
-#endif
-}
-
 void Renderer::LoadContent()
 {
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
@@ -157,7 +175,7 @@ void Renderer::LoadContent()
 
 	// Upload vertex buffer //
 	ComPtr<ID3D12Resource> intermediateVertexBuffer;
-	UpdateBufferResource(&vertexBuffer, &intermediateVertexBuffer, _countof(g_Vertices), 
+	UploadBufferToResource(&vertexBuffer, &intermediateVertexBuffer, _countof(g_Vertices), 
 		sizeof(VertexPosColor), g_Vertices);
 
 	vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
@@ -166,7 +184,7 @@ void Renderer::LoadContent()
 
 	// Upload Index Buffer //
 	ComPtr<ID3D12Resource> intermediateIndexBuffer;
-	UpdateBufferResource(&indexBuffer, &intermediateIndexBuffer, _countof(g_Indicies),
+	UploadBufferToResource(&indexBuffer, &intermediateIndexBuffer, _countof(g_Indicies),
 		sizeof(short), g_Indicies);
 
 	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
@@ -260,6 +278,8 @@ void Renderer::ResizeDepthBuffer()
 {
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 	commands->Flush();
+
+	depthBuffer.Reset();
 
 	D3D12_CLEAR_VALUE optimizedClearValue = {};
 	optimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;

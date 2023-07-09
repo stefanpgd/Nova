@@ -21,7 +21,7 @@ inline void ThrowIfFailed(HRESULT hr)
 	}
 }
 
-inline void UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12Resource** intermediateBuffer, size_t numberOfElements, size_t elementSize, const void* bufferData)
+inline void UploadBufferToResource(ID3D12Resource** destinationResource, ID3D12Resource** intermediateBuffer, size_t numberOfElements, size_t elementSize, const void* bufferData)
 {
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 	DXCommands* commands = DXAccess::GetCommands();

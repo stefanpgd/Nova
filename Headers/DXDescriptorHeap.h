@@ -13,6 +13,7 @@ public:
 		D3D12_DESCRIPTOR_HEAP_FLAGS flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 
 	ComPtr<ID3D12DescriptorHeap> Get();
+	ID3D12DescriptorHeap* GetAddress();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCPUHandleAt(unsigned int index);
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGPUHandleAt(unsigned int index);
 

@@ -10,6 +10,7 @@ DXDescriptorHeap::DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, unsigned int
 	D3D12_DESCRIPTOR_HEAP_DESC description = {};
 	description.Type = type;
 	description.NumDescriptors = amountOfDescriptors;
+	description.Flags = flags;
 
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 	ThrowIfFailed(device->CreateDescriptorHeap(&description, IID_PPV_ARGS(&heap)));
@@ -21,6 +22,11 @@ DXDescriptorHeap::DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, unsigned int
 ComPtr<ID3D12DescriptorHeap> DXDescriptorHeap::Get()
 {
 	return heap;
+}
+
+ID3D12DescriptorHeap* DXDescriptorHeap::GetAddress()
+{
+	return heap.Get();
 }
 
 CD3DX12_CPU_DESCRIPTOR_HANDLE DXDescriptorHeap::GetCPUHandleAt(unsigned int index)
