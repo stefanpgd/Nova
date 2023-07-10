@@ -43,8 +43,6 @@ private:
 	ComPtr<ID3D12Resource> depthBuffer;
 
 	float FOV;
-
-	DirectX::XMMATRIX model;
 	DirectX::XMMATRIX view;
 	DirectX::XMMATRIX projection;
 

@@ -17,6 +17,8 @@
 #include "imgui_impl_dx12.h"
 
 #include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
 
 Mesh* mesh;
 
@@ -95,25 +97,25 @@ void Renderer::Render()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
-	ImGui::ShowDemoWindow();
+	ImGui::Begin("Hoi Brechje dit is mijn window");
+	ImGui::DragFloat3("Position", &mesh->transform.Position[0]);
+	ImGui::DragFloat3("Scale", &mesh->transform.Scale[0], 0.05f);
+	ImGui::End();
+
+	mesh->transform.Rotation.x = frameCount * 4.15f;
+	mesh->transform.Rotation.y = frameCount * 1.15f;
+	mesh->transform.Rotation.z = frameCount * 0.25f;
+
+	const glm::mat4 model = mesh->transform.GetModelMatrix();
+	glm::mat4 viewMatrix;
+	glm::mat4 projectionMatrix;
+
+	viewMatrix = glm::lookAtRH(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	projectionMatrix = glm::perspective(glm::radians(FOV), (float)window->GetWindowWidth() / (float)window->GetWindowHeight(), 0.01f, 1000.0f);
+
+	glm::mat4 mvp = projectionMatrix * viewMatrix * model;
 
 	ImGui::Render();
-
-	// Placeholder until we've a proper update //
-	float angle = static_cast<float>(frameCount * 4.15f);
-	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
-	model = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle)) * XMMatrixTranslation(cos(frameCount * 0.015) * 8.0f, sin(frameCount * 0.005) * 5.0f, 0.0f);
-
-	const XMVECTOR eyePosition = XMVectorSet(0, 0, -10, 1);
-	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
-	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
-	view = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
-
-	float aspectRatio = (float)window->GetWindowWidth() / static_cast<float>(window->GetWindowHeight());
-	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(FOV), aspectRatio, 0.1f, 1000.0f);
-
-	XMMATRIX mvp = XMMatrixMultiply(model, view);
-	mvp = XMMatrixMultiply(mvp, projection);
 
 	// Grab all relevant objects for the draw call //
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
@@ -145,7 +147,7 @@ void Renderer::Render()
 	pipeline->Set();
 
 	// 7. Set Constants and Views for the pipeline  //
-	commandList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvp, 0);
+	commandList->SetGraphicsRoot32BitConstants(0, sizeof(glm::mat4) / 4, &mvp[0], 0);
 
 	// 8. Draw call //
 	mesh->SetAndDraw();

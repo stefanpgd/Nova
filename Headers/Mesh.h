@@ -4,6 +4,8 @@
 #include <d3d12.h>
 #include <vector>
 #include <glm.hpp>
+#include "Transform.h"
+
 using namespace Microsoft::WRL;
 
 struct Vertex
@@ -19,6 +21,8 @@ public:
 
 	void SetAndDraw();
 	void ClearIntermediateBuffers();
+
+	Transform transform;
 
 private:
 	ComPtr<ID3D12Resource> intermediateVertexBuffer;
