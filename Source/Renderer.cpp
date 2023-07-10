@@ -7,6 +7,7 @@
 #include "DXPipeline.h"
 #include "DXDescriptorHeap.h"
 #include "Window.h"
+#include "Mesh.h"
 
 #include <cassert>
 #include <chrono>
@@ -15,21 +16,25 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
 
+#include <glm.hpp>
+
+Mesh* mesh;
+
 struct VertexPosColor
 {
-	XMFLOAT3 Position;
-	XMFLOAT3 Color;
+	glm::vec3 Position;
+	glm::vec3 Color;
 };
 
 static VertexPosColor g_Vertices[8] = {
-	{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }, // 0
-	{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }, // 1
-	{ XMFLOAT3( 1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }, // 2
-	{ XMFLOAT3( 1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }, // 3
-	{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }, // 4
-	{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }, // 5
-	{ XMFLOAT3( 1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }, // 6
-	{ XMFLOAT3( 1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }  // 7
+	{ glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(0.0f, 0.0f, 0.0f) }, // 0
+	{ glm::vec3(-1.0f,  1.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) }, // 1
+	{ glm::vec3( 1.0f,  1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 0.0f) }, // 2
+	{ glm::vec3( 1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f) }, // 3
+	{ glm::vec3(-1.0f, -1.0f,  1.0f), glm::vec3(0.0f, 0.0f, 1.0f) }, // 4
+	{ glm::vec3(-1.0f,  1.0f,  1.0f), glm::vec3(0.0f, 1.0f, 1.0f) }, // 5
+	{ glm::vec3( 1.0f,  1.0f,  1.0f), glm::vec3(1.0f, 1.0f, 1.0f) }, // 6
+	{ glm::vec3( 1.0f, -1.0f,  1.0f), glm::vec3(1.0f, 0.0f, 1.0f) }  // 7
 };
 
 static short g_Indicies[36] =
@@ -128,8 +133,6 @@ void Renderer::Render()
 
 	// 3. Input-Assembler Settings //
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-	commandList->IASetIndexBuffer(&indexBufferView);
 
 	// 4. Rasterizer Settings //
 	commandList->RSSetViewports(1, &window->GetViewport());
@@ -145,7 +148,7 @@ void Renderer::Render()
 	commandList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvp, 0);
 
 	// 8. Draw call //
-	commandList->DrawIndexedInstanced(_countof(g_Indicies), 1, 0, 0, 0);
+	mesh->SetAndDraw();
 
 	ID3D12DescriptorHeap* heaps[] = { CBVHeap->GetAddress() };
 
@@ -173,27 +176,26 @@ void Renderer::Resize()
 void Renderer::LoadContent()
 {
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
-	
+
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	commands->ResetCommandList(backBufferIndex);
 
-	// Upload vertex buffer //
-	ComPtr<ID3D12Resource> intermediateVertexBuffer;
-	UploadBufferToResource(&vertexBuffer, &intermediateVertexBuffer, _countof(g_Vertices), 
-		sizeof(VertexPosColor), g_Vertices);
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indicies;
+	for (int i = 0; i < 8; i++)
+	{
+		Vertex v;
+		v.Position = g_Vertices[i].Position;
+		v.Color = g_Vertices[i].Color;
+		vertices.push_back(v);
+	}
 
-	vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
-	vertexBufferView.SizeInBytes = sizeof(g_Vertices);
-	vertexBufferView.StrideInBytes = sizeof(VertexPosColor);
+	for (int i = 0; i < 36; i++)
+	{
+		indicies.push_back(g_Indicies[i]);
+	}
 
-	// Upload Index Buffer //
-	ComPtr<ID3D12Resource> intermediateIndexBuffer;
-	UploadBufferToResource(&indexBuffer, &intermediateIndexBuffer, _countof(g_Indicies),
-		sizeof(short), g_Indicies);
-
-	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
-	indexBufferView.Format = DXGI_FORMAT_R16_UINT;
-	indexBufferView.SizeInBytes = sizeof(g_Indicies);
+	mesh = new Mesh(vertices, indicies);
 
 	// Create Depth-Stencil view heap
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
@@ -205,6 +207,7 @@ void Renderer::LoadContent()
 	commands->ExecuteCommandList(backBufferIndex);
 	commands->WaitForFenceValue(backBufferIndex);
 
+	mesh->ClearIntermediateBuffers();
 	ResizeDepthBuffer();
 }
 
