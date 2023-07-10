@@ -66,9 +66,10 @@ Renderer::Renderer(std::wstring windowName)
 	CBVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 100, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	window = new Window(windowName, startWindowWidth, startWindowHeight);
 
-	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
 	rootParameters[0].InitAsConstants(sizeof(XMMATRIX) / 4, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-	pipeline = new DXPipeline(L"triangle.vs.hlsl", L"triangle.ps.hlsl", rootParameters, 1);
+	rootParameters[1].InitAsConstants(1, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	pipeline = new DXPipeline(L"triangle.vs.hlsl", L"triangle.ps.hlsl", rootParameters, 2);
 
 	FOV = 60.0f; // Move to a camera class //
 
@@ -91,20 +92,23 @@ Renderer::~Renderer()
 	delete commands;
 }
 
+float rotationSpeed = 1.0f;
+
 void Renderer::Render()
 {
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
-	ImGui::Begin("Hoi Brechje dit is mijn window");
+	ImGui::Begin("Hello Window");
 	ImGui::DragFloat3("Position", &mesh->transform.Position[0]);
 	ImGui::DragFloat3("Scale", &mesh->transform.Scale[0], 0.05f);
+	ImGui::DragFloat("rotationSpeed", &rotationSpeed, 0.01f, 0.0f, 5.0f);
 	ImGui::End();
 
-	mesh->transform.Rotation.x = frameCount * 4.15f;
-	mesh->transform.Rotation.y = frameCount * 1.15f;
-	mesh->transform.Rotation.z = frameCount * 0.25f;
+	mesh->transform.Rotation.x = frameCount * 1.15f * rotationSpeed;
+	mesh->transform.Rotation.y = frameCount * 0.15f * rotationSpeed;
+	mesh->transform.Rotation.z = frameCount * 0.25f * rotationSpeed;
 
 	const glm::mat4 model = mesh->transform.GetModelMatrix();
 	glm::mat4 viewMatrix;
@@ -146,8 +150,11 @@ void Renderer::Render()
 	// 6. Bind Relevant Pipeline with the correct Root Signature //
 	pipeline->Set();
 
+	float time = (float)frameCount / 60.0f;
+
 	// 7. Set Constants and Views for the pipeline  //
 	commandList->SetGraphicsRoot32BitConstants(0, sizeof(glm::mat4) / 4, &mvp[0], 0);
+	commandList->SetGraphicsRoot32BitConstants(1, 1, &time, 0);
 
 	// 8. Draw call //
 	mesh->SetAndDraw();

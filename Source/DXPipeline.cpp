@@ -77,6 +77,7 @@ void DXPipeline::SetupPipelineState()
 	struct PipelineStateStream
 	{
 		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
+		CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER rasterizer;
 		CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
 		CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
 		CD3DX12_PIPELINE_STATE_STREAM_VS VS;
@@ -85,7 +86,12 @@ void DXPipeline::SetupPipelineState()
 		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
 	} pipelineDesc;
 
+	CD3DX12_RASTERIZER_DESC rasterizerDesc = {};
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;
+
 	pipelineDesc.pRootSignature = rootSignature.Get();
+	pipelineDesc.rasterizer = rasterizerDesc;
 	pipelineDesc.InputLayout = { inputLayout, _countof(inputLayout) };
 	pipelineDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	pipelineDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());

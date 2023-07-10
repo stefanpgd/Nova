@@ -15,6 +15,7 @@ struct VertexShaderOutput
 {
     float4 Position : SV_Position;
     float4 Color : COLOR;
+    float3 fragPos : COLOR1;
 };
 
 // Here we tell HLSL that the input of our shader program should be a VertexPosColor struct
@@ -25,6 +26,7 @@ VertexShaderOutput main(VertexPosColor IN)
     
     OUT.Position = mul(MVPCB.MVP, float4(IN.Position, 1.0f));
     OUT.Color = float4(IN.Color, 1.0f);
+    OUT.fragPos = float3(OUT.Position.xyz);
     
 	return OUT;
 }

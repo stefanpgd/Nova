@@ -1,7 +1,14 @@
+struct PixelData
+{
+    float time;
+};
+ConstantBuffer<PixelData> pixelData : register(b1);
+
 struct PixelInput
 {
     float4 Position : SV_Position;
     float3 color : COLOR;
+    float3 fragPos : COLOR1;
 };
 
 float N21(float2 uv)
@@ -16,7 +23,7 @@ float Line(float2 uv)
 
 float4 main(PixelInput IN) : SV_Target0
 {
-    float2 uv = IN.Position / float2(1280, 720);
+    float2 uv = abs(IN.fragPos.xy) * 0.2f;
     float2 scale = float2(256, 64);
     
     float2 lUV = frac(uv * scale);
@@ -24,7 +31,7 @@ float4 main(PixelInput IN) : SV_Target0
 
     float rowNoise = N21(float2(0.0, gID.y));
     float dir = ((rowNoise * 2.0) - 1.0) + 0.2;
-    //gID.x += floor(iTime * dir * 30.);
+    gID.x += floor(pixelData.time * dir * 30.);
     
     float cellNoise = N21(gID);
     float drawBlock = float(cellNoise > 0.28);
