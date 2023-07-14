@@ -116,7 +116,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)\Dependencies\glm\;$(SolutionDir)\Dependencies\ImGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Dependencies\tinygltf;$(SolutionDir)\Dependencies\stb;$(SolutionDir)\Dependencies\glm;$(SolutionDir)\Dependencies\ImGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -133,7 +133,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)\Dependencies\glm\;$(SolutionDir)\Dependencies\ImGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Dependencies\tinygltf;$(SolutionDir)\Dependencies\stb;$(SolutionDir)\Dependencies\glm;$(SolutionDir)\Dependencies\ImGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -151,6 +151,9 @@
     <ClCompile Include="Dependencies\ImGui\imgui_impl_win32.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui_tables.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="Dependencies\stb\stb_image.cpp" />
+    <ClCompile Include="Dependencies\stb\stb_image_write.cpp" />
+    <ClCompile Include="Dependencies\tinygltf\tiny_gltf.cpp" />
     <ClCompile Include="Source\Mesh.cpp" />
     <ClCompile Include="Source\DXPipeline.cpp" />
     <ClCompile Include="Source\DXDevice.cpp" />
@@ -171,6 +174,10 @@
     <ClInclude Include="Dependencies\ImGui\imstb_rectpack.h" />
     <ClInclude Include="Dependencies\ImGui\imstb_textedit.h" />
     <ClInclude Include="Dependencies\ImGui\imstb_truetype.h" />
+    <ClInclude Include="Dependencies\stb\stb_image.h" />
+    <ClInclude Include="Dependencies\stb\stb_image_write.h" />
+    <ClInclude Include="Dependencies\tinygltf\json.hpp" />
+    <ClInclude Include="Dependencies\tinygltf\tiny_gltf.h" />
     <ClInclude Include="Headers\DXPipeline.h" />
     <ClInclude Include="Headers\DXDevice.h" />
     <ClInclude Include="Headers\DXAccess.h" />
