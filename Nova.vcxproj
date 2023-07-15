@@ -154,6 +154,7 @@
     <ClCompile Include="Dependencies\stb\stb_image.cpp" />
     <ClCompile Include="Dependencies\stb\stb_image_write.cpp" />
     <ClCompile Include="Dependencies\tinygltf\tiny_gltf.cpp" />
+    <ClCompile Include="Source\Model.cpp" />
     <ClCompile Include="Source\Mesh.cpp" />
     <ClCompile Include="Source\DXPipeline.cpp" />
     <ClCompile Include="Source\DXDevice.cpp" />
@@ -190,6 +191,7 @@
     <ClInclude Include="Headers\resource.h" />
     <ClInclude Include="Headers\Mesh.h" />
     <ClInclude Include="Headers\Transform.h" />
+    <ClInclude Include="Headers\Model.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Nova.rc" />

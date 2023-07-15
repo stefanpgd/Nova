@@ -5,6 +5,7 @@
 #include <vector>
 #include <glm.hpp>
 #include "Transform.h"
+#include <tiny_gltf.h>
 
 using namespace Microsoft::WRL;
 
@@ -18,6 +19,7 @@ class Mesh
 {
 public:
 	Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int> indices);
+	Mesh(tinygltf::Model& model, tinygltf::Mesh& mesh);
 
 	void SetAndDraw();
 	void ClearIntermediateBuffers();
@@ -25,6 +27,12 @@ public:
 	Transform transform;
 
 private:
+	void LoadVertices(tinygltf::Model& model, tinygltf::Primitive& primitive);
+	void LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive);
+
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
+
 	ComPtr<ID3D12Resource> intermediateVertexBuffer;
 	ComPtr<ID3D12Resource> intermediateIndexBuffer;
 
