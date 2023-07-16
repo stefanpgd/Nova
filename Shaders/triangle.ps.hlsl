@@ -58,7 +58,7 @@ float4 main(PixelIN IN) : SV_Target0
     float4 c = float4(float3(outputColor), 1.0);
     
     float3 nColor = (IN.Normal + float3(1.0f, 1.0f, 1.0f)) * 0.5;
-    c = float4(float3(nColor * outputColor), 1.0);
+    c = float4(float3(nColor), 1.0);
     
     return float4(c);
 }

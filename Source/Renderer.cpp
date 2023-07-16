@@ -78,20 +78,16 @@ void Renderer::Render()
 
 	ImGui::Begin("Hello Window");
 	ImGui::DragFloat3("Position", &model->meshes[0]->transform.Position[0]);
+	ImGui::DragFloat3("Rotation", &model->meshes[0]->transform.Rotation[0]);
 	ImGui::DragFloat3("Scale", &model->meshes[0]->transform.Scale[0], 0.05f);
-	ImGui::DragFloat("rotationSpeed", &rotationSpeed, 0.01f, 0.0f, 5.0f);
 	ImGui::End();
-
-	model->meshes[0]->transform.Rotation.x = frameCount * 1.15f * rotationSpeed;
-	model->meshes[0]->transform.Rotation.y = frameCount * 0.15f * rotationSpeed;
-	model->meshes[0]->transform.Rotation.z = frameCount * 0.25f * rotationSpeed;
 
 	const glm::mat4 m = model->meshes[0]->transform.GetModelMatrix();
 	glm::mat4 viewMatrix;
 	glm::mat4 projectionMatrix;
 
 	viewMatrix = glm::lookAtRH(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	projectionMatrix = glm::perspective(glm::radians(FOV), (float)window->GetWindowWidth() / (float)window->GetWindowHeight(), 0.01f, 1000.0f);
+	projectionMatrix = glm::perspective(glm::radians(FOV), (float)window->GetWindowWidth() / (float)window->GetWindowHeight(), 0.01f, 100000.0f);
 
 	glm::mat4 mvp = projectionMatrix * viewMatrix * m;
 
@@ -133,7 +129,7 @@ void Renderer::Render()
 	commandList->SetGraphicsRoot32BitConstants(1, 1, &time, 0);
 
 	// 8. Draw call //
-	model->meshes[0]->SetAndDraw();
+	model->Draw();
 
 	ID3D12DescriptorHeap* heaps[] = { CBVHeap->GetAddress() };
 
@@ -165,7 +161,9 @@ void Renderer::LoadContent()
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	commands->ResetCommandList(backBufferIndex);
 
-	model = new Model("Assets/Models/SciFiHelmet/SciFiHelmet.gltf");
+	//model = new Model("Assets/Models/CylinderEngine/2CylinderEngine.gltf");
+	model = new Model("Assets/Models/Car/scene.gltf");
+	//model = new Model("Assets/Models/Avocado/Avocado.gltf");
 
 	// Create Depth-Stencil view heap
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
