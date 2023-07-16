@@ -12,14 +12,13 @@ using namespace Microsoft::WRL;
 struct Vertex
 {
 	glm::vec3 Position;
-	glm::vec3 Color;
+	glm::vec3 Normal;
 };
 
 class Mesh
 {
 public:
-	Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int> indices);
-	Mesh(tinygltf::Model& model, tinygltf::Mesh& mesh);
+	Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive);
 
 	void SetAndDraw();
 	void ClearIntermediateBuffers();
@@ -27,7 +26,7 @@ public:
 	Transform transform;
 
 private:
-	void LoadVertices(tinygltf::Model& model, tinygltf::Primitive& primitive);
+	void LoadVertices(tinygltf::Model& model, tinygltf::Primitive& primitive, const std::string& attribute);
 	void LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive);
 
 	std::vector<Vertex> vertices;

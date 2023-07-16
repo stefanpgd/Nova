@@ -24,33 +24,6 @@
 
 Model* model;
 
-struct VertexPosColor
-{
-	glm::vec3 Position;
-	glm::vec3 Color;
-};
-
-static VertexPosColor g_Vertices[8] = {
-	{ glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(0.0f, 0.0f, 0.0f) }, // 0
-	{ glm::vec3(-1.0f,  1.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) }, // 1
-	{ glm::vec3( 1.0f,  1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 0.0f) }, // 2
-	{ glm::vec3( 1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f) }, // 3
-	{ glm::vec3(-1.0f, -1.0f,  1.0f), glm::vec3(0.0f, 0.0f, 1.0f) }, // 4
-	{ glm::vec3(-1.0f,  1.0f,  1.0f), glm::vec3(0.0f, 1.0f, 1.0f) }, // 5
-	{ glm::vec3( 1.0f,  1.0f,  1.0f), glm::vec3(1.0f, 1.0f, 1.0f) }, // 6
-	{ glm::vec3( 1.0f, -1.0f,  1.0f), glm::vec3(1.0f, 0.0f, 1.0f) }  // 7
-};
-
-static short g_Indicies[36] =
-{
-	0, 1, 2, 0, 2, 3,
-	4, 6, 5, 4, 7, 6,
-	4, 5, 1, 4, 1, 0,
-	3, 2, 6, 3, 6, 7,
-	1, 5, 6, 1, 6, 2,
-	4, 0, 3, 4, 3, 7
-};
-
 namespace RendererInternal
 {
 	DXDevice* device = nullptr;
@@ -192,22 +165,7 @@ void Renderer::LoadContent()
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	commands->ResetCommandList(backBufferIndex);
 
-	std::vector<Vertex> vertices;
-	std::vector<unsigned int> indicies;
-	for (int i = 0; i < 8; i++)
-	{
-		Vertex v;
-		v.Position = g_Vertices[i].Position;
-		v.Color = g_Vertices[i].Color;
-		vertices.push_back(v);
-	}
-
-	for (int i = 0; i < 36; i++)
-	{
-		indicies.push_back(g_Indicies[i]);
-	}
-
-	model = new Model("Assets/Models/Avocado.gltf");
+	model = new Model("Assets/Models/SciFiHelmet/SciFiHelmet.gltf");
 
 	// Create Depth-Stencil view heap
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};

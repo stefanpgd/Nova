@@ -27,6 +27,11 @@ Model::Model(const std::string& fileName)
 
 	for (int i = 0; i < model.meshes.size(); i++)
 	{
-		meshes.push_back(new Mesh(model, model.meshes[i]));
+		tinygltf::Mesh& mesh = model.meshes[i];
+
+		for (int i = 0; i < mesh.primitives.size(); i++)
+		{
+			meshes.push_back(new Mesh(model, mesh.primitives[i]));
+		}
 	}
 }

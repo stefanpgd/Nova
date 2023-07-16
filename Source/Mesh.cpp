@@ -5,35 +5,11 @@
 
 #include <cassert>
 
-Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int> indices)
+Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive)
 {
-	// Upload vertex buffer //
-	UploadBufferToResource(&vertexBuffer, &intermediateVertexBuffer, vertices.size(),
-		sizeof(Vertex), vertices.data());
-
-	vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
-	vertexBufferView.SizeInBytes = vertices.size() * sizeof(Vertex);
-	vertexBufferView.StrideInBytes = sizeof(Vertex);
-
-	// Upload Index Buffer //
-	UploadBufferToResource(&indexBuffer, &intermediateIndexBuffer, indices.size(),
-		sizeof(unsigned int), indices.data());
-
-	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
-	indexBufferView.Format = DXGI_FORMAT_R32_UINT;
-	indexBufferView.SizeInBytes = sizeof(unsigned int) * indices.size();
-
-	amountOfIndices = indices.size();
-}
-
-Mesh::Mesh(tinygltf::Model& model, tinygltf::Mesh& mesh)
-{
-	for (int i = 0; i < mesh.primitives.size(); i++)
-	{
-		tinygltf::Primitive& primitive = mesh.primitives[i];
-		LoadVertices(model, primitive);
-		LoadIndices(model, primitive);
-	}
+	LoadVertices(model, primitive, "POSITION");
+	LoadVertices(model, primitive, "NORMAL");
+	LoadIndices(model, primitive);
 
 	// Upload vertex buffer //
 	UploadBufferToResource(&vertexBuffer, &intermediateVertexBuffer, vertices.size(),
@@ -68,16 +44,16 @@ void Mesh::ClearIntermediateBuffers()
 	intermediateIndexBuffer.Reset();
 }
 
-void Mesh::LoadVertices(tinygltf::Model& model, tinygltf::Primitive& primitive)
+void Mesh::LoadVertices(tinygltf::Model& model, tinygltf::Primitive& primitive, const std::string& atr)
 {
 	// Verify if attribute exists within the primitive //
-	auto attribute = primitive.attributes.find("POSITION");
+	auto attribute = primitive.attributes.find(atr);
 	if (attribute == primitive.attributes.end())
 	{
 		assert(false && "No position attribute found!");
 	}
 
-	tinygltf::Accessor& positionAccessor = model.accessors[primitive.attributes.at("POSITION")];
+	tinygltf::Accessor& positionAccessor = model.accessors[primitive.attributes.at(atr)];
 	tinygltf::BufferView& positionView = model.bufferViews[positionAccessor.bufferView];
 	tinygltf::Buffer& buffer = model.buffers[positionView.buffer];
 
@@ -88,14 +64,29 @@ void Mesh::LoadVertices(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	int typeSize = tinygltf::GetNumComponentsInType(positionAccessor.type);
 	int bufferStride = positionAccessor.ByteStride(positionView);
 
+	// In case it hasn't happened, resize the vertices buffers since we're 
+	// going to directly memcpy the data into an already existing buffer
+	if (vertices.size() < positionAccessor.count)
+	{
+		vertices.resize(positionAccessor.count);
+	}
+
 	for (int i = 0; i < positionAccessor.count; i++)
 	{
-		Vertex vertex;
+		Vertex& vertex = vertices[i];
 		size_t bufferLocation = positionView.byteOffset + positionAccessor.byteOffset + (i * bufferStride);
 
-		memcpy(&vertex.Position, &buffer.data[bufferLocation], bufferStride);
-		vertices.push_back(vertex);
+		if (atr == "POSITION")
+		{
+			memcpy(&vertex.Position, &buffer.data[bufferLocation], bufferStride);
+		}
+		else if (atr == "NORMAL")
+		{
+			memcpy(&vertex.Normal, &buffer.data[bufferLocation], bufferStride);
+		}
 	}
+
+	int x = 0;
 }
 
 void Mesh::LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive)
@@ -117,7 +108,7 @@ void Mesh::LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive)
 			memcpy(&index, &indicesBuffer.data[bufferLocation], sizeof(short));
 			indices.push_back(index);
 		}
-		
+
 		if (componentSize == 4)
 		{
 			unsigned int index;
