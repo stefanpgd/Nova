@@ -154,6 +154,7 @@
     <ClCompile Include="Dependencies\stb\stb_image.cpp" />
     <ClCompile Include="Dependencies\stb\stb_image_write.cpp" />
     <ClCompile Include="Dependencies\tinygltf\tiny_gltf.cpp" />
+    <ClCompile Include="Source\Texture.cpp" />
     <ClCompile Include="Source\Model.cpp" />
     <ClCompile Include="Source\Mesh.cpp" />
     <ClCompile Include="Source\DXPipeline.cpp" />
@@ -187,6 +188,7 @@
     <ClInclude Include="Headers\Engine.h" />
     <ClInclude Include="Headers\Renderer.h" />
     <ClInclude Include="Headers\DXUtilities.h" />
+    <ClInclude Include="Headers\Texture.h" />
     <ClInclude Include="Headers\Window.h" />
     <ClInclude Include="Headers\resource.h" />
     <ClInclude Include="Headers\Mesh.h" />

@@ -21,13 +21,19 @@
 #include <gtc/type_ptr.hpp>
 
 #include "Model.h"
+#include "Texture.h"
 
 Model* model;
+Texture* texture;
 
 namespace RendererInternal
 {
+	Window* window = nullptr;
 	DXDevice* device = nullptr;
 	DXCommands* commands = nullptr;
+
+	DXDescriptorHeap* CSUHeap = nullptr;
+	DXDescriptorHeap* DSVHeap = nullptr;
 }
 using namespace RendererInternal;
 
@@ -38,13 +44,17 @@ Renderer::Renderer(std::wstring windowName)
 	device = new DXDevice();
 	commands = new DXCommands();
 	DSVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1);
-	CBVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 100, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	CSUHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1000, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	window = new Window(windowName, startWindowWidth, startWindowHeight);
 
-	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorTable[1];
+	descriptorTable[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	CD3DX12_ROOT_PARAMETER1 rootParameters[3];
 	rootParameters[0].InitAsConstants(sizeof(XMMATRIX) / 4, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	rootParameters[1].InitAsConstants(1, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
-	pipeline = new DXPipeline(L"triangle.vs.hlsl", L"triangle.ps.hlsl", rootParameters, 2);
+	rootParameters[2].InitAsDescriptorTable(1, &descriptorTable[0], D3D12_SHADER_VISIBILITY_PIXEL);
+	pipeline = new DXPipeline(L"triangle.vs.hlsl", L"triangle.ps.hlsl", rootParameters, 3);
 
 	FOV = 60.0f; // Move to a camera class //
 
@@ -55,11 +65,11 @@ Renderer::Renderer(std::wstring windowName)
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    
 
+	unsigned int imguiDescriptorIndex = CSUHeap->GetNextAvailableIndex();
 	ImGui::StyleColorsDark();
 	ImGui_ImplWin32_Init(window->GetHWND());
 	ImGui_ImplDX12_Init(device->GetAddress(), Window::BackBufferCount, DXGI_FORMAT_R8G8B8A8_UNORM,
-		CBVHeap->GetAddress(), CBVHeap->GetCPUHandleAt(0), CBVHeap->GetGPUHandleAt(0));
-
+		CSUHeap->GetAddress(), CSUHeap->GetCPUHandleAt(imguiDescriptorIndex), CSUHeap->GetGPUHandleAt(imguiDescriptorIndex));
 }
 
 Renderer::~Renderer()
@@ -77,7 +87,7 @@ void Renderer::Render()
 	ImGui::NewFrame();
 
 	ImGui::Begin("Hello Window");
-	ImGui::DragFloat3("Position", &model->meshes[0]->transform.Position[0]);
+	ImGui::DragFloat3("Position", &model->meshes[0]->transform.Position[0], 0.02f);
 	ImGui::DragFloat3("Rotation", &model->meshes[0]->transform.Rotation[0]);
 	ImGui::DragFloat3("Scale", &model->meshes[0]->transform.Scale[0], 0.05f);
 	ImGui::End();
@@ -124,16 +134,16 @@ void Renderer::Render()
 
 	float time = (float)frameCount / 60.0f;
 
-	// 7. Set Constants and Views for the pipeline  //
+	// 7. Set Heaps, Constants and Views for the pipeline  //
+	ID3D12DescriptorHeap* heaps[] = { CSUHeap->GetAddress() };
+	commandList->SetDescriptorHeaps(1, heaps);
 	commandList->SetGraphicsRoot32BitConstants(0, sizeof(glm::mat4) / 4, &mvp[0], 0);
 	commandList->SetGraphicsRoot32BitConstants(1, 1, &time, 0);
+	commandList->SetGraphicsRootDescriptorTable(2, CSUHeap->GetGPUHandleAt(texture->GetDescriptorIndex()));
 
 	// 8. Draw call //
 	model->Draw();
 
-	ID3D12DescriptorHeap* heaps[] = { CBVHeap->GetAddress() };
-
-	commandList->SetDescriptorHeaps(1, heaps);
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 
 	// 9. Transition to a Present state, then execute the commands and present the next back buffer //
@@ -158,12 +168,12 @@ void Renderer::LoadContent()
 {
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 
-	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
-	commands->ResetCommandList(backBufferIndex);
-
 	//model = new Model("Assets/Models/CylinderEngine/2CylinderEngine.gltf");
-	model = new Model("Assets/Models/Car/scene.gltf");
 	//model = new Model("Assets/Models/Avocado/Avocado.gltf");
+	model = new Model("Assets/Models/SciFiHelmet/SciFiHelmet.gltf");
+	//model = new Model("Assets/Models/Car/scene.gltf");
+
+	texture = new Texture("Assets/Models/SciFiHelmet/SciFiHelmet_BaseColor.png");
 
 	// Create Depth-Stencil view heap
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
@@ -171,9 +181,6 @@ void Renderer::LoadContent()
 	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	ThrowIfFailed(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&DSVHeap->Get())));
-
-	commands->ExecuteCommandList(backBufferIndex);
-	commands->WaitForFenceValue(backBufferIndex);
 
 	ResizeDepthBuffer();
 }
@@ -224,5 +231,27 @@ DXCommands* DXAccess::GetCommands()
 	}
 
 	assert(false && "DXCommands hasn't been initialized");
+	return nullptr;
+}
+
+unsigned int DXAccess::GetCurrentBackBufferIndex()
+{
+	return window->GetCurrentBackBufferIndex();
+}
+
+DXDescriptorHeap* DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type)
+{
+	switch (type)
+	{
+	case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
+		return CSUHeap;
+		break;
+
+	case D3D12_DESCRIPTOR_HEAP_TYPE_DSV:
+		return DSVHeap;
+		break;
+	}
+
+	printf("Warning: type is not a valid Descriptor Heap type!");
 	return nullptr;
 }

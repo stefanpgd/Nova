@@ -29,9 +29,6 @@ private:
 	void ResizeDepthBuffer();
 
 private:
-	Window* window;
-	DXDescriptorHeap* DSVHeap;
-	DXDescriptorHeap* CBVHeap;
 	DXPipeline* pipeline;
 
 	ComPtr<ID3D12Resource> vertexBuffer;

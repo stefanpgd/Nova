@@ -9,6 +9,7 @@ struct VertexIN
 {
     float3 Position : POSITION;
     float3 Normal : NORMAL;
+    float3 TexCoord : TEXCOORD;
 };
 
 struct VertexOUT
@@ -16,6 +17,7 @@ struct VertexOUT
     float4 Position : SV_Position;
     float3 Normal : NORMAL;
     float3 fragPos : COLOR1;
+    float2 TexCoord : TEXCOORD;
 };
 
 // Here we tell HLSL that the input of our shader program should be a VertexPosColor struct
@@ -27,6 +29,7 @@ VertexOUT main(VertexIN IN)
     OUT.Position = mul(MVPCB.MVP, float4(IN.Position, 1.0f));
     OUT.Normal = normalize(mul(MVPCB.MVP, float4(IN.Normal, 0.0f)));
     OUT.fragPos = float3(OUT.Position.xyz);
+    OUT.TexCoord = IN.TexCoord;
     
 	return OUT;
 }

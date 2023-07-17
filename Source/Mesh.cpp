@@ -9,6 +9,7 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive)
 {
 	LoadVertices(model, primitive, "POSITION");
 	LoadVertices(model, primitive, "NORMAL");
+	LoadVertices(model, primitive, "TEXCOORD_0");
 	LoadIndices(model, primitive);
 
 	// Upload vertex buffer //
@@ -84,9 +85,11 @@ void Mesh::LoadVertices(tinygltf::Model& model, tinygltf::Primitive& primitive, 
 		{
 			memcpy(&vertex.Normal, &buffer.data[bufferLocation], bufferStride);
 		}
+		else if (atr == "TEXCOORD_0")
+		{
+			memcpy(&vertex.TexCoord, &buffer.data[bufferLocation], bufferStride);
+		}
 	}
-
-	int x = 0;
 }
 
 void Mesh::LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive)

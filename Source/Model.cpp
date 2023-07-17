@@ -7,6 +7,9 @@
 #include <gtc/type_ptr.hpp>
 #include <gtx/matrix_decompose.hpp>
 
+#include "DXAccess.h"
+#include "DXCommands.h"
+
 Model::Model(const std::string& fileName)
 {
 	tinygltf::TinyGLTF loader;
@@ -60,6 +63,7 @@ Model::Model(const std::string& fileName)
 			LoadChildren(model, childNode);
 		}
 	}
+
 }
 
 void Model::Draw()

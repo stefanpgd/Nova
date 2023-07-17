@@ -23,8 +23,10 @@ inline void ThrowIfFailed(HRESULT hr)
 
 inline void UploadBufferToResource(ID3D12Resource** destinationResource, ID3D12Resource** intermediateBuffer, size_t numberOfElements, size_t elementSize, const void* bufferData)
 {
+	unsigned int backBufferIndex = DXAccess::GetCurrentBackBufferIndex();
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 	DXCommands* commands = DXAccess::GetCommands();
+	commands->ResetCommandList(backBufferIndex);
 
 	if (!bufferData)
 	{
@@ -60,6 +62,36 @@ inline void UploadBufferToResource(ID3D12Resource** destinationResource, ID3D12R
 
 	// Using the info from the subresource data struct, the data will now be copied over to the Upload heap and then the Default Heap to the destination resource.
 	UpdateSubresources(commands->GetCommandList().Get(), *destinationResource, *intermediateBuffer, 0, 0, 1, &subresourceData);
+
+	commands->ExecuteCommandList(backBufferIndex);
+	commands->WaitForFenceValue(backBufferIndex);
+}
+
+inline void UploadAndTransitionResource(ComPtr<ID3D12Resource> resource, D3D12_SUBRESOURCE_DATA subresource, D3D12_RESOURCE_STATES finalState)
+{
+	unsigned int backBufferIndex = DXAccess::GetCurrentBackBufferIndex();
+	CD3DX12_RESOURCE_BARRIER finalBarrier = CD3DX12_RESOURCE_BARRIER::Transition(resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, finalState);
+	CD3DX12_RESOURCE_BARRIER copyBarrier = CD3DX12_RESOURCE_BARRIER::Transition(resource.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+	DXCommands* commands = DXAccess::GetCommands();
+
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
+	ComPtr<ID3D12Resource> intermediate;
+	ComPtr<ID3D12GraphicsCommandList2> commandList = commands->GetCommandList();
+
+	commands->ResetCommandList(backBufferIndex);
+	commandList->ResourceBarrier(1, &copyBarrier);
+
+	UINT64 bufferSize = GetRequiredIntermediateSize(resource.Get(), 0, 1);
+	CD3DX12_HEAP_PROPERTIES intermediateHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	D3D12_RESOURCE_DESC intermediateDescription = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
+
+	ThrowIfFailed(device->CreateCommittedResource(&intermediateHeap, D3D12_HEAP_FLAG_NONE, &intermediateDescription, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&intermediate)));
+
+	UpdateSubresources(commands->GetCommandList().Get(), resource.Get(), intermediate.Get(), 0, 0, 1, &subresource);
+
+	commandList->ResourceBarrier(1, &finalBarrier);
+	commands->ExecuteCommandList(backBufferIndex);
+	commands->WaitForFenceValue(backBufferIndex);
 }
 
 inline void TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
