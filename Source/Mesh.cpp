@@ -2,6 +2,8 @@
 #include "DXUtilities.h"
 #include "DXAccess.h"
 #include "DXCommands.h"
+#include "DXDescriptorHeap.h"
+#include "Texture.h"
 
 #include <cassert>
 
@@ -29,14 +31,34 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	indexBufferView.SizeInBytes = sizeof(unsigned int) * indices.size();
 
 	amountOfIndices = indices.size();
+
+	tinygltf::Material& material = model.materials[primitive.material];
+	unsigned int diffuseIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+
+	unsigned char c = 0;
+
+	if (diffuseIndex != -1)
+	{
+		unsigned int imageIndex = model.textures[diffuseIndex].source;
+
+		tinygltf::Image& diffuseImage = model.images[imageIndex];
+		diffuseTexture = new Texture(&diffuseImage.image[0], diffuseImage.width, diffuseImage.height, diffuseImage.component);
+	}
 }
 
 void Mesh::SetAndDraw()
 {
 	ComPtr<ID3D12GraphicsCommandList2> commandList = DXAccess::GetCommands()->GetCommandList();
+
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 	commandList->IASetIndexBuffer(&indexBufferView);
 	commandList->DrawIndexedInstanced(amountOfIndices, 1, 0, 0, 0);
+
+	if (diffuseTexture)
+	{
+		DXDescriptorHeap* CSUHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		commandList->SetGraphicsRootDescriptorTable(2, CSUHeap->GetGPUHandleAt(diffuseTexture->GetDescriptorIndex()));
+	}
 }
 
 void Mesh::ClearIntermediateBuffers()

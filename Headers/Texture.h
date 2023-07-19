@@ -9,7 +9,7 @@ using namespace Microsoft::WRL;
 class Texture
 {
 public:
-	Texture(std::string filePath);
+	Texture(unsigned char*, int width, int height, int c);
 
 	UINT GetDescriptorIndex();
 

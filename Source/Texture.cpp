@@ -5,17 +5,18 @@
 #include "DXAccess.h"
 #include "DXUtilities.h"
 #include "DXDescriptorHeap.h"
-#include <stb_image.h>
 #include <d3dx12.h>
 
-Texture::Texture(std::string filePath)
+Texture::Texture(unsigned char* buffer, int w, int h, int c)
 {
+	imageBuffer = buffer;
+	this->width = w;
+	this->height = h;
+	this->channels = c;
+
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 	DXCommands* commands = DXAccess::GetCommands();
 	DXDescriptorHeap* SRVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	// Load image into local memory //
-	imageBuffer = stbi_load(filePath.c_str(), &width, &height, &channels, 4);
 
 	// Describe that we want to use the regular memory heap on the GPU, and how big our
 	// resource will using the Tex2D helper from d3dx12.h 
@@ -29,8 +30,8 @@ Texture::Texture(std::string filePath)
 	// Setup which data we would like to push from CPU to GPU memory // 
 	D3D12_SUBRESOURCE_DATA subresource = {};
 	subresource.pData = imageBuffer;
-	subresource.RowPitch = width * sizeof(UINT);
-	subresource.SlicePitch = width * height * sizeof(UINT);
+	subresource.RowPitch = width * channels;
+	subresource.SlicePitch = width * height * channels;
 
 	// Upload the data to the 'Upload Heap' then to the 'Deafult Heap'. While doing so, we transition the
 	// resource from 'Common data' -> 'Copy destination data' and finally to 'Pixel shader resource'
@@ -46,8 +47,6 @@ Texture::Texture(std::string filePath)
 	// we can make an SRV that can be used by our shader pipeline.
 	textureSRVIndex = SRVHeap->GetNextAvailableIndex();
 	device->CreateShaderResourceView(texture.Get(), &srv, SRVHeap->GetCPUHandleAt(textureSRVIndex));
-
-	stbi_image_free(imageBuffer);
 }
 
 UINT Texture::GetDescriptorIndex()

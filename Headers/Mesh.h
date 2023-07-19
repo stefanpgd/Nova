@@ -7,6 +7,7 @@
 #include "Transform.h"
 #include <tiny_gltf.h>
 
+class Texture;
 using namespace Microsoft::WRL;
 
 struct Vertex
@@ -32,6 +33,8 @@ private:
 
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
+
+	Texture* diffuseTexture;
 
 	ComPtr<ID3D12Resource> intermediateVertexBuffer;
 	ComPtr<ID3D12Resource> intermediateIndexBuffer;

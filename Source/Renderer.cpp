@@ -139,7 +139,6 @@ void Renderer::Render()
 	commandList->SetDescriptorHeaps(1, heaps);
 	commandList->SetGraphicsRoot32BitConstants(0, sizeof(glm::mat4) / 4, &mvp[0], 0);
 	commandList->SetGraphicsRoot32BitConstants(1, 1, &time, 0);
-	commandList->SetGraphicsRootDescriptorTable(2, CSUHeap->GetGPUHandleAt(texture->GetDescriptorIndex()));
 
 	// 8. Draw call //
 	model->Draw();
@@ -170,10 +169,10 @@ void Renderer::LoadContent()
 
 	//model = new Model("Assets/Models/CylinderEngine/2CylinderEngine.gltf");
 	//model = new Model("Assets/Models/Avocado/Avocado.gltf");
-	model = new Model("Assets/Models/SciFiHelmet/SciFiHelmet.gltf");
-	//model = new Model("Assets/Models/Car/scene.gltf");
+	//model = new Model("Assets/Models/SciFiHelmet/SciFiHelmet.gltf");
+	model = new Model("Assets/Models/Car/scene.gltf");
 
-	texture = new Texture("Assets/Models/SciFiHelmet/SciFiHelmet_BaseColor.png");
+	//texture = new Texture("Assets/Models/SciFiHelmet/SciFiHelmet_BaseColor.png");
 
 	// Create Depth-Stencil view heap
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
