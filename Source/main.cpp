@@ -73,50 +73,6 @@ inline void ThrowIfFailed(HRESULT hr)
 	}
 }
 
-void RegisterWindowClass(HINSTANCE hInst, const wchar_t* windowClassName)
-{
-	WNDCLASSEXW windowClassDescription = {};
-
-	windowClassDescription.cbSize = sizeof(WNDCLASSEX);
-	windowClassDescription.style = CS_HREDRAW | CS_VREDRAW;
-	windowClassDescription.lpfnWndProc = &WndProc;
-	windowClassDescription.cbClsExtra = 0;
-	windowClassDescription.cbWndExtra = 0;
-	windowClassDescription.hInstance = hInst;
-	windowClassDescription.hIcon = ::LoadIcon(hInst, NULL);
-	windowClassDescription.hCursor = ::LoadCursor(NULL, IDC_ARROW);
-	windowClassDescription.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	windowClassDescription.lpszMenuName = NULL;
-	windowClassDescription.lpszClassName = windowClassName;
-	windowClassDescription.hIconSm = ::LoadIcon(hInst, NULL);
-
-	static ATOM atom = ::RegisterClassExW(&windowClassDescription);
-	assert(atom > 0);
-}
-
-HWND CreateWindow(const wchar_t* windowClassName, HINSTANCE hInst, const wchar_t* windowName,
-	unsigned int width, unsigned int height)
-{
-	int screenWidth = ::GetSystemMetrics(SM_CXSCREEN);
-	int screenHeight = ::GetSystemMetrics(SM_CYSCREEN);
-
-	RECT windowRect = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
-	::AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
-
-	int windowWidth = windowRect.right - windowRect.left;
-	int windowHeight = windowRect.bottom - windowRect.top;
-
-	// Center the window within the screen. Clamp to 0, 0 for the top-left corner.
-	int windowX = std::max<int>(0, (screenWidth - windowWidth) / 2);
-	int windowY = std::max<int>(0, (screenHeight - windowHeight) / 2);
-
-	HWND hWnd = ::CreateWindowExW(NULL, windowClassName, windowName, WS_OVERLAPPEDWINDOW,
-		windowX, windowY, windowWidth, windowHeight, NULL, NULL, hInst, nullptr);
-
-	assert(hWnd && "Failed to create window");
-	return hWnd;
-}
-
 ComPtr<IDXGIAdapter4> GetAdapter(bool useWarp)
 {
 	ComPtr<IDXGIFactory4> dxgiFactory;
@@ -211,22 +167,6 @@ ComPtr<ID3D12CommandQueue> CreateCommandQueue(ComPtr<ID3D12Device2> device, D3D1
 	return commandQueue;
 }
 
-// Check if tearing is supported, aka the monitor has Free Sync/ G-Sync
-bool CheckTearingSupport()
-{
-	BOOL allowTearing = FALSE;
-
-	ComPtr<IDXGIFactory5> factory5;
-	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&factory5)));
-
-	if(FAILED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing))))
-	{
-		allowTearing = FALSE;
-	}
-
-	return allowTearing == TRUE;
-}
-
 ComPtr<IDXGISwapChain4> CreateSwapChain(HWND hWnd, ComPtr<ID3D12CommandQueue> commandQueue,
 	unsigned int width, unsigned int height, unsigned int bufferCount)
 {
@@ -251,7 +191,7 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(HWND hWnd, ComPtr<ID3D12CommandQueue> co
 	swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-	swapChainDesc.Flags = CheckTearingSupport() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+	//swapChainDesc.Flags = CheckTearingSupport() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
 
 	ComPtr<IDXGISwapChain1> swapChain1;
 	ThrowIfFailed(factory->CreateSwapChainForHwnd(commandQueue.Get(), hWnd, &swapChainDesc, nullptr, nullptr, &swapChain1));
@@ -507,15 +447,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 int CALLBACK main(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLine, int nCmdShow)
 {
-	const wchar_t* windowClassName = L"Nova";
-
-	g_TearingSupported = CheckTearingSupport();
-
-	RegisterWindowClass(hInstance, windowClassName);
-	g_hWnd = CreateWindow(windowClassName, hInstance, L"Nova", g_WindowWidth, g_WindowHeight);
-
-	::GetWindowRect(g_hWnd, &g_WindowRect);
-
 	ComPtr<IDXGIAdapter4> adapter = GetAdapter(false);
 	g_Device = CreateDevice(adapter);
 	g_CommandQueue = CreateCommandQueue(g_Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
@@ -552,7 +483,7 @@ int CALLBACK main(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLine,
 	Flush(g_CommandQueue, g_Fence, g_FenceValue, g_FenceEvent);
 	CloseHandle(g_FenceEvent);
 
-	Engine engine("Nova");
+	Engine engine(L"Nova");
 	engine.Run();
 
 	return 0;

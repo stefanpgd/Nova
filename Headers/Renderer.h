@@ -10,11 +10,7 @@
 class Renderer
 {
 public:
-	Renderer(const std::string& applicationName);
+	Renderer(const std::wstring& applicationName);
 
-	void Start();
 	void Render();
-
-private:
-	void DebugLayer();
 };

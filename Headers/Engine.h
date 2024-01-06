@@ -6,7 +6,7 @@ class Renderer;
 class Engine
 {
 public:
-	Engine(const std::string& applicationName);
+	Engine(const std::wstring& applicationName);
 
 	void Run();
 
@@ -15,10 +15,12 @@ private:
 	void Update();
 	void Render();
 
+	void RegisterWindowClass();
+
 private:
 	bool runApplication = true;
 
 	Renderer* renderer;
 
-	std::string applicationName;
+	std::wstring applicationName;
 };

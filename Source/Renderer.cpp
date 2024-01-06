@@ -1,37 +1,45 @@
 #include "Renderer.h"
-#include "DXUtilities.h"
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
 
-// Windows runtime library, needed for ComPtr template class.
-#include <wrl.h>
-using namespace Microsoft::WRL;
+#include "DXAccess.h"
+#include "DXDevice.h"
+#include "DXCommands.h"
+#include "DXUtilities.h"
+#include "Window.h"
 
-// DirectX 12 Headers
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <d3dcompiler.h>
-#include <DirectXMath.h>
+namespace RendererInternal
+{
+	Window* window = nullptr;
+	DXDevice* device = nullptr;
+	DXCommands* commands = nullptr;
 
-// D3D12 extension library.
-#include "d3dx12.h"
+	//DXDescriptorHeap* CSUHeap = nullptr;
+	//DXDescriptorHeap* DSVHeap = nullptr;
+}
+using namespace RendererInternal;
 
-Renderer::Renderer(const std::string& applicationName)
+Renderer::Renderer(const std::wstring& applicationName)
 {
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-	DebugLayer();
 }
 
 void Renderer::Render()
 {
 }
 
-void Renderer::DebugLayer()
+ComPtr<ID3D12Device2> DXAccess::GetDevice()
 {
-#if defined (_DEBUG)
-	ComPtr<ID3D12Debug> debugInterface;
-	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)));
-	debugInterface->EnableDebugLayer();
-#endif
+	return device->Get();
+}
+
+DXCommands* DXAccess::GetCommands()
+{
+	return commands;
+}
+
+unsigned int DXAccess::GetCurrentBackBufferIndex()
+{
+	window->
 }
