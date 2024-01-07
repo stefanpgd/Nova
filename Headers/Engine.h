@@ -1,4 +1,7 @@
 #pragma once
+
+#define WIN32_LEAN_AND_MEAN 
+#include <Windows.h>
 #include <string>
 
 class Renderer;
@@ -11,11 +14,8 @@ public:
 	void Run();
 
 private:
-	void Start();
-	void Update();
-	void Render();
-
 	void RegisterWindowClass();
+	static LRESULT CALLBACK WindowsCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
 	bool runApplication = true;

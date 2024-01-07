@@ -3,7 +3,6 @@
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
-
 #include <cassert>
 
 // Engine contains main loop for the "framework"
@@ -17,7 +16,6 @@
 Engine::Engine(const std::wstring& applicationName) : applicationName(applicationName)
 {
 	RegisterWindowClass();
-
 	renderer = new Renderer(this->applicationName);
 }
 
@@ -25,7 +23,7 @@ void Engine::Run()
 {
 	while(runApplication)
 	{
-
+		renderer->Render();
 	}
 }
 
@@ -36,7 +34,7 @@ void Engine::RegisterWindowClass()
 
 	windowClassDescription.cbSize = sizeof(WNDCLASSEX);
 	windowClassDescription.style = CS_HREDRAW | CS_VREDRAW;
-	//windowClassDescription.lpfnWndProc = &WndProc;
+	windowClassDescription.lpfnWndProc = &WindowsCallback;
 	windowClassDescription.cbClsExtra = 0;
 	windowClassDescription.cbWndExtra = 0;
 	windowClassDescription.hInstance = hInstance;
@@ -49,4 +47,9 @@ void Engine::RegisterWindowClass()
 
 	static ATOM atom = ::RegisterClassExW(&windowClassDescription);
 	assert(atom > 0);
+}
+
+LRESULT Engine::WindowsCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	return ::DefWindowProcW(hwnd, message, wParam, lParam);
 }

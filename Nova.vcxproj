@@ -145,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\DXDescriptorHeap.cpp" />
     <ClCompile Include="Source\DXDevice.cpp" />
     <ClCompile Include="Source\DXCommands.cpp" />
     <ClCompile Include="Source\Engine.cpp" />
@@ -160,6 +161,7 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Headers\DXDescriptorHeap.h" />
     <ClInclude Include="Headers\DXDevice.h" />
     <ClInclude Include="Headers\DXAccess.h" />
     <ClInclude Include="Headers\DXCommands.h" />
