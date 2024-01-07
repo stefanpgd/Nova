@@ -21,8 +21,15 @@ Engine::Engine(const std::wstring& applicationName) : applicationName(applicatio
 
 void Engine::Run()
 {
-	while(runApplication)
+	MSG msg = {};
+	while(runApplication && msg.message != WM_QUIT)
 	{
+		if(::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			::TranslateMessage(&msg);
+			::DispatchMessage(&msg);
+		}
+
 		renderer->Render();
 	}
 }
@@ -51,5 +58,12 @@ void Engine::RegisterWindowClass()
 
 LRESULT Engine::WindowsCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	switch(message)
+	{
+	case WM_DESTROY:
+		::PostQuitMessage(0);
+		break;
+	}
+
 	return ::DefWindowProcW(hwnd, message, wParam, lParam);
 }
