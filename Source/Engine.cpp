@@ -58,6 +58,7 @@ void Engine::RegisterWindowClass()
 
 LRESULT Engine::WindowsCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	// TODO: Add resizing again
 	switch(message)
 	{
 	case WM_DESTROY:

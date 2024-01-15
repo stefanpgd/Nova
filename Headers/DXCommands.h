@@ -7,6 +7,7 @@ using namespace Microsoft::WRL;
 #include <d3d12.h>
 #include <cstdint>
 
+// TODO: Update the Commands to support Upload Version. means backbuffer stuff needs to be optional?
 class DXCommands
 {
 public:

@@ -111,10 +111,10 @@ void DXCommands::CreateCommandAllocators()
 
 void DXCommands::CreateSynchronizationObjects()
 {
-	// Fence
+	// Fence //
 	ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
 
-	// Fence Event
+	// Fence Event //
 	fenceEvent = ::CreateEvent(NULL, FALSE, FALSE, NULL);
 	assert(fenceEvent && "Failed to create Fence Event");
 }
