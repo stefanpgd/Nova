@@ -9,6 +9,7 @@
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
+#include <d3dcompiler.h>
 #include <cassert>
 
 namespace RendererInternal
@@ -153,6 +154,29 @@ Renderer::Renderer(const std::wstring& applicationName)
 	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
 	indexBufferView.SizeInBytes = sizeof(cubeIndices);
 	indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+
+	// Loading Shaders //
+	ComPtr<ID3DBlob> vertexShaderBlob;
+	ComPtr<ID3DBlob> vertexError;
+	D3DCompileFromFile(L"Source/Shaders/default.vertex.hlsl", NULL, NULL, "main", "vs_5_1", 0, 0, &vertexShaderBlob, &vertexError);
+
+	if (!vertexError == NULL)
+	{
+		std::string buffer = std::string((char*)vertexError->GetBufferPointer());
+		printf(buffer.c_str());
+		assert(false && "Compilation of shader failed, read console for errors.");
+	}
+
+	ComPtr<ID3DBlob> pixelShaderBlob;
+	ComPtr<ID3DBlob> pixelError;
+	D3DCompileFromFile(L"Source/Shaders/default.pixel.hlsl", NULL, NULL, "main", "ps_5_1", 0, 0, &pixelShaderBlob, &pixelError);
+
+	if (!pixelError == NULL)
+	{
+		std::string buffer = std::string((char*)pixelError->GetBufferPointer());
+		printf(buffer.c_str());
+		assert(false && "Compilation of shader failed, read console for errors.");
+	}
 }
 
 void Renderer::Render()

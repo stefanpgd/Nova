@@ -66,4 +66,8 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Source\Shaders\default.pixel.hlsl" />
+    <FxCompile Include="Source\Shaders\default.vertex.hlsl" />
+  </ItemGroup>
 </Project>
