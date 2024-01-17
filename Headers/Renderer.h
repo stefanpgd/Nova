@@ -13,4 +13,10 @@ public:
 	Renderer(const std::wstring& applicationName);
 
 	void Render();
+
+private:
+
+	unsigned int frameCount = 0;
+	unsigned int width = 1080;
+	unsigned int height = 720;
 };

@@ -38,7 +38,7 @@ ComPtr<ID3D12PipelineState> pipeline;
 matrix model;
 matrix view;
 matrix projection;
-float FOV = 60.0f;
+float FOV = 45.0f;
 
 struct Vertex
 {
@@ -133,7 +133,7 @@ Renderer::Renderer(const std::wstring& applicationName)
 	RTVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 3);
 
 	commands = new DXCommands();
-	window = new Window(applicationName, 1080, 720);
+	window = new Window(applicationName, width, height);
 
 	// TODO: Remove executing of commandlist from inside the Upload function to outside 
 	// TEMP //
@@ -249,23 +249,100 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	D3D12_PIPELINE_STATE_STREAM_DESC pssDescription = { sizeof(PSS), &PSS };
 	ThrowIfFailed(device->Get()->CreatePipelineState(&pssDescription, IID_PPV_ARGS(&pipeline)));
+
+	// TODO: Move depth stencil creation to the Window
+	// TODO: Add depth stencil resize function and call it during actual resize...
+
+	// For Depth-Stencil buffers, we want to set up a claer value
+	// Thus, we need to create this beforehand.
+	D3D12_CLEAR_VALUE clearValue = {};
+	clearValue.Format = DXGI_FORMAT_D32_FLOAT;
+	clearValue.DepthStencil = { 1.0f, 0 };
+
+	CD3DX12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	CD3DX12_RESOURCE_DESC depthDescription = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, 
+		width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+
+	// Depth Buffers are just like any other texture resource, we specificy a size, tell where the 
+	// resource is allowed to be used ( Depth - Stencil )
+	// and we give it a resource state of depth write for the pipeline 
+	ThrowIfFailed(device->Get()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE,
+		&depthDescription, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(&depthBuffer)));
+
+	// And like any resource, we need to create a view to store so we can send information about it
+	D3D12_DEPTH_STENCIL_VIEW_DESC DSV;
+	DSV.Format = DXGI_FORMAT_D32_FLOAT;
+	DSV.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	DSV.Texture2D.MipSlice = 0;
+	DSV.Flags = D3D12_DSV_FLAG_NONE;
+
+	device->Get()->CreateDepthStencilView(depthBuffer.Get(), &DSV, DSVHeap->GetCPUHandleAt(0));
 }
 
 void Renderer::Render()
 {
+	// TODO: Move this stuff to an appropriate place
+	float angle = float(frameCount) * (90.0 / 144.0f);
+	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
+
+	matrix rot = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
+
+	float s = abs(cosf(float(frameCount) * 0.01));
+	model = XMMatrixScaling(s, s, s);
+	model = XMMatrixMultiply(model, rot);
+	
+
+	const XMVECTOR eyePosition = XMVectorSet(0, 0, -10, 1);
+	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
+	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
+	view = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
+
+	float aspectRatio = float(width) / float(height);
+	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(FOV), aspectRatio, 0.01f, 1000.0f);
+
+	// NEW: Create MVP //
+	matrix MVP = XMMatrixMultiply(model, view);
+	MVP = XMMatrixMultiply(MVP, projection);
+
 	// Grab all relevant objects for the draw call //
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
 	ComPtr<ID3D12GraphicsCommandList2> commandList = commands->GetCommandList();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE renderTarget = window->GetCurrentBackBufferRTV();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = DSVHeap->GetCPUHandleAt(0);
 
 	// 1. Reset Command Allocator & List, afterwards prepare Render Target //
 	commands->ResetCommandList(backBufferIndex);
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-	// 2. Clear Screen //
+	// 2. Clear Screen & Depth Buffer //
 	float clearColor[4] = { 0.2f, 0.2f, 0.2f, 1.0f };
 	commandList->ClearRenderTargetView(renderTarget, clearColor, 0, nullptr);
+	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+	// NEW: Set Pipeline & Root //
+	commandList->SetPipelineState(pipeline.Get());
+	commandList->SetGraphicsRootSignature(rootSignature.Get());
+
+	// NEW: Setup Input Assembler //
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+	commandList->IASetIndexBuffer(&indexBufferView);
+
+	// NEW: Rasterization Stage //
+	commandList->RSSetViewports(1, &window->GetViewport());
+	commandList->RSSetScissorRects(1, &window->GetScissorRect());
+
+	// NEW: Setup Output Merger //
+	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
+
+	// NEW: Bind constants (mvp) //
+	commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
+
+	// NEW: Draw Mesh //
+	commandList->DrawIndexedInstanced(_countof(cubeIndices), 1, 0, 0, 0);
+
+	int x = 0;
 
 	// 3. Transition to a Present state, then execute the commands and present the next back buffer //
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -274,6 +351,8 @@ void Renderer::Render()
 
 	// 4. Before we go to the next cycle, we gotta make sure that back buffer is available for use //
 	commands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
+
+	frameCount++;
 }
 
 #pragma region DXAccess Implementations

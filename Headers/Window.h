@@ -28,7 +28,7 @@ public:
 	unsigned int GetWindowWidth();
 	unsigned int GetWindowHeight();
 	const D3D12_VIEWPORT& GetViewport();
-	const D3D12_RECT& GetRect();
+	const D3D12_RECT& GetScissorRect();
 
 private:
 	void SetupWindow();

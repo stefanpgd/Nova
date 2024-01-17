@@ -103,9 +103,9 @@ const D3D12_VIEWPORT& Window::GetViewport()
 	return viewport;
 }
 
-const D3D12_RECT& Window::GetRect()
+const D3D12_RECT& Window::GetScissorRect()
 {
-	return windowRect;
+	return scissorRect;
 }
 
 void Window::SetupWindow()
