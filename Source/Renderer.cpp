@@ -177,6 +177,78 @@ Renderer::Renderer(const std::wstring& applicationName)
 		printf(buffer.c_str());
 		assert(false && "Compilation of shader failed, read console for errors.");
 	}
+
+	// Input Layout //
+	// input layouts describe to the Input Assembler what the layout of the vertex buffer is
+	D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+	};
+
+	D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
+	featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+	if(FAILED(device->Get()->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
+	{
+		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+	}
+
+	// We can enable & disable access to the root signature variables for each shader stage
+	// This is not necessary to do but can lead to minor performance increases
+
+	// Root parameters can be setup using CD3DX12_ROOT_PARAMETER_1
+	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+	rootParameters[0].InitAsConstants(16, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	// Root parameters can be set to be accessed in one or multiple stages
+
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
+	rootSignatureDescription.Init_1_1(_countof(rootParameters), rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	// Root signatures, similar to shaders need to be compiled. To do that we need to 
+	// Serialize it using the functions below. A benefit in the future is pre-compiling the rootsignatures
+	// which is a optimization method for larger renderers.
+	ComPtr<ID3DBlob> rootSignatureBlob;
+	ComPtr<ID3DBlob> rootSignatureError;
+	D3DX12SerializeVersionedRootSignature(&rootSignatureDescription, featureData.HighestVersion, &rootSignatureBlob, &rootSignatureError);
+
+	if(!rootSignatureError == NULL)
+	{
+		std::string buffer = std::string((char*)pixelError->GetBufferPointer());
+		printf(buffer.c_str());
+		assert(false && "Compilation of shader failed, read console for errors.");
+	}
+
+	ThrowIfFailed(device->Get()->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(), 
+		rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
+
+	// A PSO is created using a Pipeline State Stream struct. Any item in this struct
+	// is considered a Token. Any token relevant to the PSO will be implemented.
+	// Don't want a tesselation state, exclude the token of it the struct
+	// want DX Ray tracing, include the tokens for it
+	struct PipelineStateStream
+	{
+		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
+		CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
+		CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
+		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
+		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
+		CD3DX12_PIPELINE_STATE_STREAM_VS VS;
+		CD3DX12_PIPELINE_STATE_STREAM_PS PS;
+	} PSS;
+
+	D3D12_RT_FORMAT_ARRAY rtvFormats = {};
+	rtvFormats.NumRenderTargets = 1;
+	rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+	PSS.RootSignature = rootSignature.Get();
+	PSS.InputLayout = { inputLayout, _countof(inputLayout) };
+	PSS.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	PSS.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+	PSS.RTVFormats = rtvFormats;
+	PSS.VS = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
+	PSS.PS = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
+
+	D3D12_PIPELINE_STATE_STREAM_DESC pssDescription = { sizeof(PSS), &PSS };
+	ThrowIfFailed(device->Get()->CreatePipelineState(&pssDescription, IID_PPV_ARGS(&pipeline)));
 }
 
 void Renderer::Render()
