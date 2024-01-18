@@ -7,6 +7,9 @@
 // TODO: Fullscreen support
 // TODO: Screen tearing support
 
+class DXRootSignature;
+class DXPipeline;
+
 class Renderer
 {
 public:
@@ -15,6 +18,8 @@ public:
 	void Render();
 
 private:
+	DXRootSignature* rootSignature;
+	DXPipeline* pipeline;
 
 	unsigned int frameCount = 0;
 	unsigned int width = 1080;

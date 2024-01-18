@@ -5,12 +5,17 @@
 #include "DXCommands.h"
 #include "DXUtilities.h"
 #include "DXDescriptorHeap.h"
+#include "DXRootSignature.h"
+#include "DXPipeline.h"
 #include "Window.h"
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
 #include <d3dcompiler.h>
 #include <cassert>
+
+// TODO: Move depth stencil creation to the Window
+// TODO: Add depth stencil resize function and call it during actual resize...
 
 namespace RendererInternal
 {
@@ -33,9 +38,6 @@ ComPtr<ID3D12Resource> indexBuffer;
 D3D12_INDEX_BUFFER_VIEW indexBufferView;
 
 ComPtr<ID3D12Resource> depthBuffer;
-
-ComPtr<ID3D12RootSignature> rootSignature;
-ComPtr<ID3D12PipelineState> pipeline;
 
 matrix model;
 matrix view;
@@ -69,51 +71,6 @@ static unsigned int cubeIndices[36] =
 	4, 0, 3, 4, 3, 7
 };
 
-// Process:
-// We want to upload our buffer from the CPU to the GPU
-// To do that we've to go from: CPU -> System Memory (RAM) -> GPU
-// Because of that we want to allocate TWO committed resources
-// One that rests in the `DEFAULT_HEAP`, which is GPU memory
-// And a "temporary" one that rests in the `UPLOAD_HEAP`, which is the system memory
-// The temporary or, intermediate resource can be destroyed after uploading
-// Heaps aren't only GPU... there are multiple types in different places
-// Default Heap = (GPU) VRAM
-// Upload Heap = system RAM
-void UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> commandList, ID3D12Resource** destinationResource, ID3D12Resource** intermediateResource,
-	unsigned int numberOfElements, unsigned int elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags)
-{
-	if(!bufferData)
-	{
-		assert(false && "Buffer data is NOT valid!");
-		return;
-	}
-
-	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
-	unsigned int bufferSize = numberOfElements * elementSize;
-
-	CD3DX12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	CD3DX12_HEAP_PROPERTIES uploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-
-	CD3DX12_RESOURCE_DESC bufferDescription = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags);
-
-	// Creating the resource on the GPU. Through CommitedResource we don't have to allocate the heap for it
-	ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE,
-		&bufferDescription, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(destinationResource)));
-
-	// Create a resource to the upload heap with the same parameters 
-	ThrowIfFailed(device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
-		&bufferDescription, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(intermediateResource)));
-	// Any resource within the upload heap MUST be GENERIC_READ
-
-	// Describe the data that needs to be uploaded
-	D3D12_SUBRESOURCE_DATA subresourceData = {};
-	subresourceData.pData = bufferData;
-	subresourceData.RowPitch = bufferSize;
-	subresourceData.SlicePitch = subresourceData.RowPitch;
-
-	UpdateSubresources(commandList.Get(), *destinationResource, *intermediateResource, 0, 0, 1, &subresourceData);
-}
-
 Renderer::Renderer(const std::wstring& applicationName)
 {
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -129,8 +86,11 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	window = new Window(applicationName, width, height);
 
-	// TODO: Remove executing of commandlist from inside the Upload function to outside 
-	// TEMP //
+	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+	rootParameters[0].InitAsConstants(16, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	rootSignature = new DXRootSignature(rootParameters, 1, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
 
 	copyCommands->ResetCommandList();
 	ComPtr<ID3D12GraphicsCommandList2> copyCommandList = copyCommands->GetGraphicsCommandList();
@@ -145,7 +105,7 @@ Renderer::Renderer(const std::wstring& applicationName)
 	vertexBufferView.StrideInBytes = sizeof(Vertex);
 
 	ComPtr<ID3D12Resource> intermediateIndexBuffer;
-	UpdateBufferResource(copyCommandList , &indexBuffer, &intermediateIndexBuffer, _countof(cubeIndices),
+	UpdateBufferResource(copyCommandList, &indexBuffer, &intermediateIndexBuffer, _countof(cubeIndices),
 		sizeof(unsigned int), cubeIndices, D3D12_RESOURCE_FLAG_NONE);
 
 	// Create vertex view from the resources we just initialized
@@ -157,103 +117,9 @@ Renderer::Renderer(const std::wstring& applicationName)
 	copyCommands->Signal();
 	copyCommands->WaitForFenceValue(DXAccess::GetCurrentBackBufferIndex());
 
-	// Loading Shaders //
-	ComPtr<ID3DBlob> vertexShaderBlob;
-	ComPtr<ID3DBlob> vertexError;
-	D3DCompileFromFile(L"Source/Shaders/default.vertex.hlsl", NULL, NULL, "main", "vs_5_1", 0, 0, &vertexShaderBlob, &vertexError);
-
-	if (!vertexError == NULL)
-	{
-		std::string buffer = std::string((char*)vertexError->GetBufferPointer());
-		printf(buffer.c_str());
-		assert(false && "Compilation of shader failed, read console for errors.");
-	}
-
-	ComPtr<ID3DBlob> pixelShaderBlob;
-	ComPtr<ID3DBlob> pixelError;
-	D3DCompileFromFile(L"Source/Shaders/default.pixel.hlsl", NULL, NULL, "main", "ps_5_1", 0, 0, &pixelShaderBlob, &pixelError);
-
-	if (!pixelError == NULL)
-	{
-		std::string buffer = std::string((char*)pixelError->GetBufferPointer());
-		printf(buffer.c_str());
-		assert(false && "Compilation of shader failed, read console for errors.");
-	}
-
-	// Input Layout //
-	// input layouts describe to the Input Assembler what the layout of the vertex buffer is
-	D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
-	};
-
-	D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
-	featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-	if(FAILED(device->Get()->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
-	{
-		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-	}
-
-	// We can enable & disable access to the root signature variables for each shader stage
-	// This is not necessary to do but can lead to minor performance increases
-
 	// Root parameters can be setup using CD3DX12_ROOT_PARAMETER_1
-	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
-	rootParameters[0].InitAsConstants(16, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+
 	// Root parameters can be set to be accessed in one or multiple stages
-
-	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-	rootSignatureDescription.Init_1_1(_countof(rootParameters), rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	// Root signatures, similar to shaders need to be compiled. To do that we need to 
-	// Serialize it using the functions below. A benefit in the future is pre-compiling the rootsignatures
-	// which is a optimization method for larger renderers.
-	ComPtr<ID3DBlob> rootSignatureBlob;
-	ComPtr<ID3DBlob> rootSignatureError;
-	D3DX12SerializeVersionedRootSignature(&rootSignatureDescription, featureData.HighestVersion, &rootSignatureBlob, &rootSignatureError);
-
-	if(!rootSignatureError == NULL)
-	{
-		std::string buffer = std::string((char*)pixelError->GetBufferPointer());
-		printf(buffer.c_str());
-		assert(false && "Compilation of shader failed, read console for errors.");
-	}
-
-	ThrowIfFailed(device->Get()->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(), 
-		rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
-
-	// A PSO is created using a Pipeline State Stream struct. Any item in this struct
-	// is considered a Token. Any token relevant to the PSO will be implemented.
-	// Don't want a tesselation state, exclude the token of it the struct
-	// want DX Ray tracing, include the tokens for it
-	struct PipelineStateStream
-	{
-		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
-		CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
-		CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
-		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
-		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
-		CD3DX12_PIPELINE_STATE_STREAM_VS VS;
-		CD3DX12_PIPELINE_STATE_STREAM_PS PS;
-	} PSS;
-
-	D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-	rtvFormats.NumRenderTargets = 1;
-	rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-
-	PSS.RootSignature = rootSignature.Get();
-	PSS.InputLayout = { inputLayout, _countof(inputLayout) };
-	PSS.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	PSS.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-	PSS.RTVFormats = rtvFormats;
-	PSS.VS = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
-	PSS.PS = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
-
-	D3D12_PIPELINE_STATE_STREAM_DESC pssDescription = { sizeof(PSS), &PSS };
-	ThrowIfFailed(device->Get()->CreatePipelineState(&pssDescription, IID_PPV_ARGS(&pipeline)));
-
-	// TODO: Move depth stencil creation to the Window
-	// TODO: Add depth stencil resize function and call it during actual resize...
 
 	// For Depth-Stencil buffers, we want to set up a claer value
 	// Thus, we need to create this beforehand.
@@ -262,7 +128,7 @@ Renderer::Renderer(const std::wstring& applicationName)
 	clearValue.DepthStencil = { 1.0f, 0 };
 
 	CD3DX12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	CD3DX12_RESOURCE_DESC depthDescription = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, 
+	CD3DX12_RESOURCE_DESC depthDescription = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT,
 		width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
 	// Depth Buffers are just like any other texture resource, we specificy a size, tell where the 
@@ -292,7 +158,7 @@ void Renderer::Render()
 	float s = abs(cosf(float(frameCount) * 0.01));
 	model = XMMatrixScaling(s, s, s);
 	model = XMMatrixMultiply(model, rot);
-	
+
 
 	const XMVECTOR eyePosition = XMVectorSet(0, 0, -10, 1);
 	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
@@ -323,8 +189,8 @@ void Renderer::Render()
 	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	// NEW: Set Pipeline & Root //
-	commandList->SetPipelineState(pipeline.Get());
-	commandList->SetGraphicsRootSignature(rootSignature.Get());
+	commandList->SetPipelineState(pipeline->GetAddress());
+	commandList->SetGraphicsRootSignature(rootSignature->GetAddress());
 
 	// NEW: Setup Input Assembler //
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -375,7 +241,7 @@ DXCommands* DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE type)
 		assert(false && "Commands haven't been initialized yet, call will return nullptr");
 	}
 
-	switch (type)
+	switch(type)
 	{
 	case D3D12_COMMAND_LIST_TYPE_COPY:
 		return copyCommands;

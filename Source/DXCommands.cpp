@@ -8,14 +8,14 @@
 
 DXCommands::DXCommands(D3D12_COMMAND_LIST_TYPE type, unsigned int commandAllocatorCount) : commandAllocatorCount(commandAllocatorCount)
 {
-	if (commandAllocatorCount == 0)
+	if(commandAllocatorCount == 0)
 	{
 		assert(false && "Must have at least 1 command allocator");
 	}
 
 	frameFenceValues = new uint64_t[commandAllocatorCount];
 
-	for (int i = 0; i < commandAllocatorCount; i++)
+	for(int i = 0; i < commandAllocatorCount; i++)
 	{
 		frameFenceValues[i] = 0;
 	}
@@ -64,7 +64,7 @@ void DXCommands::Flush()
 {
 	Signal();
 
-	for (int i = 0; i < commandAllocatorCount; i++)
+	for(int i = 0; i < commandAllocatorCount; i++)
 	{
 		WaitForFenceValue(i);
 	}
@@ -72,7 +72,7 @@ void DXCommands::Flush()
 
 void DXCommands::WaitForFenceValue(unsigned int allocatorIndex)
 {
-	if (fence->GetCompletedValue() < frameFenceValues[allocatorIndex])
+	if(fence->GetCompletedValue() < frameFenceValues[allocatorIndex])
 	{
 		ThrowIfFailed(fence->SetEventOnCompletion(frameFenceValues[allocatorIndex], fenceEvent));
 		WaitForSingleObject(fenceEvent, static_cast<DWORD>(std::chrono::milliseconds::max().count()));
@@ -120,7 +120,7 @@ void DXCommands::CreateCommandList()
 
 void DXCommands::CreateCommandAllocators()
 {
-	for (int i = 0; i < commandAllocatorCount; i++)
+	for(int i = 0; i < commandAllocatorCount; i++)
 	{
 		ComPtr<ID3D12CommandAllocator> commandAllocator;
 		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator)));
