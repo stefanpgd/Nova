@@ -6,11 +6,23 @@
 #include <cassert>
 #include <chrono>
 
-DXCommands::DXCommands()
+DXCommands::DXCommands(D3D12_COMMAND_LIST_TYPE type, unsigned int commandAllocatorCount) : commandAllocatorCount(commandAllocatorCount)
 {
+	if (commandAllocatorCount == 0)
+	{
+		assert(false && "Must have at least 1 command allocator");
+	}
+
+	frameFenceValues = new uint64_t[commandAllocatorCount];
+
+	for (int i = 0; i < commandAllocatorCount; i++)
+	{
+		frameFenceValues[i] = 0;
+	}
+
 	device = DXAccess::GetDevice();
 
-	CreateCommandQueue();
+	CreateCommandQueue(type);
 	CreateCommandAllocators();
 	CreateCommandList();
 	CreateSynchronizationObjects();
@@ -22,7 +34,7 @@ DXCommands::~DXCommands()
 	CloseHandle(fenceEvent);
 }
 
-void DXCommands::ExecuteCommandList(int backBufferIndex)
+void DXCommands::ExecuteCommandList(int allocatorIndex)
 {
 	ThrowIfFailed(commandList->Close());
 
@@ -30,13 +42,13 @@ void DXCommands::ExecuteCommandList(int backBufferIndex)
 	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
 	Signal();
-	frameFenceValues[backBufferIndex] = fenceValue;
+	frameFenceValues[allocatorIndex] = fenceValue;
 }
 
-void DXCommands::ResetCommandList(int backBufferIndex)
+void DXCommands::ResetCommandList(int allocatorIndex)
 {
-	commandAllocators[backBufferIndex]->Reset();
-	commandList->Reset(commandAllocators[backBufferIndex].Get(), nullptr);
+	commandAllocators[allocatorIndex]->Reset();
+	commandList->Reset(commandAllocators[allocatorIndex].Get(), nullptr);
 }
 
 void DXCommands::Signal()
@@ -52,17 +64,17 @@ void DXCommands::Flush()
 {
 	Signal();
 
-	for(int i = 0; i < Window::BackBufferCount; i++)
+	for (int i = 0; i < commandAllocatorCount; i++)
 	{
 		WaitForFenceValue(i);
 	}
 }
 
-void DXCommands::WaitForFenceValue(unsigned int backBufferIndex)
+void DXCommands::WaitForFenceValue(unsigned int allocatorIndex)
 {
-	if(fence->GetCompletedValue() < frameFenceValues[backBufferIndex])
+	if (fence->GetCompletedValue() < frameFenceValues[allocatorIndex])
 	{
-		ThrowIfFailed(fence->SetEventOnCompletion(frameFenceValues[backBufferIndex], fenceEvent));
+		ThrowIfFailed(fence->SetEventOnCompletion(frameFenceValues[allocatorIndex], fenceEvent));
 		WaitForSingleObject(fenceEvent, static_cast<DWORD>(std::chrono::milliseconds::max().count()));
 	}
 }
@@ -72,15 +84,23 @@ ComPtr<ID3D12CommandQueue> DXCommands::GetCommandQueue()
 	return commandQueue;
 }
 
-ComPtr<ID3D12GraphicsCommandList2> DXCommands::GetCommandList()
+ComPtr<ID3D12CommandList> DXCommands::GetCommandList()
+{
+	ComPtr<ID3D12CommandList> commands;
+	commandList.As(&commands);
+
+	return commands;
+}
+
+ComPtr<ID3D12GraphicsCommandList2> DXCommands::GetGraphicsCommandList()
 {
 	return commandList;
 }
 
-void DXCommands::CreateCommandQueue()
+void DXCommands::CreateCommandQueue(D3D12_COMMAND_LIST_TYPE type)
 {
 	D3D12_COMMAND_QUEUE_DESC description = {};
-	description.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+	description.Type = type;
 	description.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 	description.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	description.NodeMask = 0;
@@ -100,7 +120,7 @@ void DXCommands::CreateCommandList()
 
 void DXCommands::CreateCommandAllocators()
 {
-	for(int i = 0; i < Window::BackBufferCount; i++)
+	for (int i = 0; i < commandAllocatorCount; i++)
 	{
 		ComPtr<ID3D12CommandAllocator> commandAllocator;
 		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator)));

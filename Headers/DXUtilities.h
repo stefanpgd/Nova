@@ -26,7 +26,7 @@ inline void ThrowIfFailed(HRESULT hr)
 
 inline void TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
 {
-	ComPtr<ID3D12GraphicsCommandList2> commandList = DXAccess::GetCommands()->GetCommandList();
+	ComPtr<ID3D12GraphicsCommandList2> commandList = DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetGraphicsCommandList();
 	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource, before, after);
 	commandList->ResourceBarrier(1, &barrier);
 }

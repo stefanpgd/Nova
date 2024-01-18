@@ -10,7 +10,7 @@ using namespace Microsoft::WRL;
 
 namespace DXAccess
 {
-	DXCommands* GetCommands();
+	DXCommands* GetCommands(D3D12_COMMAND_LIST_TYPE type);
 	ComPtr<ID3D12Device2> GetDevice();
 	DXDescriptorHeap* GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type);
 

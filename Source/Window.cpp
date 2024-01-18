@@ -157,7 +157,7 @@ void Window::CreateSwapChain()
 	swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	swapChainDesc.Flags = tearingSupported ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
 
-	ComPtr<ID3D12CommandQueue> commandQueue = DXAccess::GetCommands()->GetCommandQueue();
+	ComPtr<ID3D12CommandQueue> commandQueue = DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetCommandQueue();
 	ComPtr<IDXGISwapChain1> swapChain1;
 	ThrowIfFailed(factory->CreateSwapChainForHwnd(commandQueue.Get(), windowHandle, &swapChainDesc, nullptr, nullptr, &swapChain1));
 	ThrowIfFailed(factory->MakeWindowAssociation(windowHandle, DXGI_MWA_NO_ALT_ENTER));

@@ -16,7 +16,9 @@ namespace RendererInternal
 {
 	Window* window = nullptr;
 	DXDevice* device = nullptr;
-	DXCommands* commands = nullptr;
+
+	DXCommands* directCommands = nullptr;
+	DXCommands* copyCommands = nullptr;
 
 	DXDescriptorHeap* CSUHeap = nullptr;
 	DXDescriptorHeap* DSVHeap = nullptr;
@@ -77,7 +79,7 @@ static unsigned int cubeIndices[36] =
 // Heaps aren't only GPU... there are multiple types in different places
 // Default Heap = (GPU) VRAM
 // Upload Heap = system RAM
-void UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12Resource** intermediateResource,
+void UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> commandList, ID3D12Resource** destinationResource, ID3D12Resource** intermediateResource,
 	unsigned int numberOfElements, unsigned int elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags)
 {
 	if(!bufferData)
@@ -109,17 +111,7 @@ void UpdateBufferResource(ID3D12Resource** destinationResource, ID3D12Resource**
 	subresourceData.RowPitch = bufferSize;
 	subresourceData.SlicePitch = subresourceData.RowPitch;
 
-	// TODO: Solve this mess...
-	// SUPER TEMP //
-	DXAccess::GetCommands()->ResetCommandList(DXAccess::GetCurrentBackBufferIndex());
-
-	UpdateSubresources(DXAccess::GetCommands()->GetCommandList().Get(),
-		*destinationResource, *intermediateResource, 0, 0, 1, &subresourceData);
-
-	// SUPER TEMP //
-	DXAccess::GetCommands()->ExecuteCommandList(DXAccess::GetCurrentBackBufferIndex());
-	DXAccess::GetCommands()->Signal();
-	DXAccess::GetCommands()->WaitForFenceValue(DXAccess::GetCurrentBackBufferIndex());
+	UpdateSubresources(commandList.Get(), *destinationResource, *intermediateResource, 0, 0, 1, &subresourceData);
 }
 
 Renderer::Renderer(const std::wstring& applicationName)
@@ -132,13 +124,19 @@ Renderer::Renderer(const std::wstring& applicationName)
 	DSVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 5);
 	RTVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 3);
 
-	commands = new DXCommands();
+	directCommands = new DXCommands(D3D12_COMMAND_LIST_TYPE_DIRECT, Window::BackBufferCount);
+	copyCommands = new DXCommands(D3D12_COMMAND_LIST_TYPE_DIRECT, 1);
+
 	window = new Window(applicationName, width, height);
 
 	// TODO: Remove executing of commandlist from inside the Upload function to outside 
 	// TEMP //
+
+	copyCommands->ResetCommandList();
+	ComPtr<ID3D12GraphicsCommandList2> copyCommandList = copyCommands->GetGraphicsCommandList();
+
 	ComPtr<ID3D12Resource> intermediateVertexBuffer;
-	UpdateBufferResource(&vertexBuffer, &intermediateVertexBuffer, _countof(cubeBuffer), 
+	UpdateBufferResource(copyCommandList, &vertexBuffer, &intermediateVertexBuffer, _countof(cubeBuffer),
 		sizeof(Vertex), cubeBuffer, D3D12_RESOURCE_FLAG_NONE);
 
 	// Create vertex view from the resources we just initialized
@@ -147,13 +145,17 @@ Renderer::Renderer(const std::wstring& applicationName)
 	vertexBufferView.StrideInBytes = sizeof(Vertex);
 
 	ComPtr<ID3D12Resource> intermediateIndexBuffer;
-	UpdateBufferResource(&indexBuffer, &intermediateIndexBuffer, _countof(cubeIndices),
+	UpdateBufferResource(copyCommandList , &indexBuffer, &intermediateIndexBuffer, _countof(cubeIndices),
 		sizeof(unsigned int), cubeIndices, D3D12_RESOURCE_FLAG_NONE);
 
 	// Create vertex view from the resources we just initialized
 	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
 	indexBufferView.SizeInBytes = sizeof(cubeIndices);
 	indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+
+	copyCommands->ExecuteCommandList(DXAccess::GetCurrentBackBufferIndex());
+	copyCommands->Signal();
+	copyCommands->WaitForFenceValue(DXAccess::GetCurrentBackBufferIndex());
 
 	// Loading Shaders //
 	ComPtr<ID3DBlob> vertexShaderBlob;
@@ -307,12 +309,12 @@ void Renderer::Render()
 	// Grab all relevant objects for the draw call //
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
-	ComPtr<ID3D12GraphicsCommandList2> commandList = commands->GetCommandList();
+	ComPtr<ID3D12GraphicsCommandList2> commandList = directCommands->GetGraphicsCommandList();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE renderTarget = window->GetCurrentBackBufferRTV();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = DSVHeap->GetCPUHandleAt(0);
 
 	// 1. Reset Command Allocator & List, afterwards prepare Render Target //
-	commands->ResetCommandList(backBufferIndex);
+	directCommands->ResetCommandList(backBufferIndex);
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	// 2. Clear Screen & Depth Buffer //
@@ -346,11 +348,11 @@ void Renderer::Render()
 
 	// 3. Transition to a Present state, then execute the commands and present the next back buffer //
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	commands->ExecuteCommandList(backBufferIndex);
+	directCommands->ExecuteCommandList(backBufferIndex);
 	window->Present();
 
 	// 4. Before we go to the next cycle, we gotta make sure that back buffer is available for use //
-	commands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
+	directCommands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
 
 	frameCount++;
 }
@@ -366,14 +368,23 @@ ComPtr<ID3D12Device2> DXAccess::GetDevice()
 	return device->Get();
 }
 
-DXCommands* DXAccess::GetCommands()
+DXCommands* DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE type)
 {
-	if(!commands)
+	if(!directCommands || !copyCommands)
 	{
-		assert(false && "DXCommands hasn't been initialized yet, call will return nullptr");
+		assert(false && "Commands haven't been initialized yet, call will return nullptr");
 	}
 
-	return commands;
+	switch (type)
+	{
+	case D3D12_COMMAND_LIST_TYPE_COPY:
+		return copyCommands;
+		break;
+
+	case D3D12_COMMAND_LIST_TYPE_DIRECT:
+		return directCommands;
+		break;
+	}
 }
 
 unsigned int DXAccess::GetCurrentBackBufferIndex()

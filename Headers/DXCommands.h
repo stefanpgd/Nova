@@ -11,21 +11,22 @@ using namespace Microsoft::WRL;
 class DXCommands
 {
 public:
-	DXCommands();
+	DXCommands(D3D12_COMMAND_LIST_TYPE type, unsigned int commandAllocatorCount);
 	~DXCommands();
 
-	void ExecuteCommandList(int backBufferIndex);
-	void ResetCommandList(int backBufferIndex);
+	void ExecuteCommandList(int allocatorIndex = 0);
+	void ResetCommandList(int allocatorIndex = 0);
 
 	void Signal();
 	void Flush();
-	void WaitForFenceValue(unsigned int backBufferIndex);
+	void WaitForFenceValue(unsigned int allocatorIndex = 0);
 
 	ComPtr<ID3D12CommandQueue> GetCommandQueue();
-	ComPtr<ID3D12GraphicsCommandList2> GetCommandList();
+	ComPtr<ID3D12CommandList> GetCommandList();
+	ComPtr<ID3D12GraphicsCommandList2> GetGraphicsCommandList();
 
 private:
-	void CreateCommandQueue();
+	void CreateCommandQueue(D3D12_COMMAND_LIST_TYPE type);
 	void CreateCommandList();
 	void CreateCommandAllocators();
 	void CreateSynchronizationObjects();
@@ -38,8 +39,9 @@ private:
 	ComPtr<ID3D12CommandAllocator> commandAllocators[Window::BackBufferCount];
 
 	// CPU-GPU Synchronization //
+	unsigned int commandAllocatorCount = 0;
 	ComPtr<ID3D12Fence> fence;
 	HANDLE fenceEvent;
-	uint64_t frameFenceValues[Window::BackBufferCount] = {};
+	uint64_t* frameFenceValues = nullptr;
 	uint64_t fenceValue = 0;
 };
