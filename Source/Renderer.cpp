@@ -37,7 +37,6 @@ D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 ComPtr<ID3D12Resource> indexBuffer;
 D3D12_INDEX_BUFFER_VIEW indexBufferView;
 
-ComPtr<ID3D12Resource> depthBuffer;
 
 matrix model;
 matrix view;
@@ -88,8 +87,8 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
 	rootParameters[0].InitAsConstants(16, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-	rootSignature = new DXRootSignature(rootParameters, 1, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
+	rootSignature = new DXRootSignature(rootParameters, 1, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
 
 	copyCommands->ResetCommandList();
@@ -116,35 +115,6 @@ Renderer::Renderer(const std::wstring& applicationName)
 	copyCommands->ExecuteCommandList(DXAccess::GetCurrentBackBufferIndex());
 	copyCommands->Signal();
 	copyCommands->WaitForFenceValue(DXAccess::GetCurrentBackBufferIndex());
-
-	// Root parameters can be setup using CD3DX12_ROOT_PARAMETER_1
-
-	// Root parameters can be set to be accessed in one or multiple stages
-
-	// For Depth-Stencil buffers, we want to set up a claer value
-	// Thus, we need to create this beforehand.
-	D3D12_CLEAR_VALUE clearValue = {};
-	clearValue.Format = DXGI_FORMAT_D32_FLOAT;
-	clearValue.DepthStencil = { 1.0f, 0 };
-
-	CD3DX12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	CD3DX12_RESOURCE_DESC depthDescription = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT,
-		width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-
-	// Depth Buffers are just like any other texture resource, we specificy a size, tell where the 
-	// resource is allowed to be used ( Depth - Stencil )
-	// and we give it a resource state of depth write for the pipeline 
-	ThrowIfFailed(device->Get()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE,
-		&depthDescription, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(&depthBuffer)));
-
-	// And like any resource, we need to create a view to store so we can send information about it
-	D3D12_DEPTH_STENCIL_VIEW_DESC DSV;
-	DSV.Format = DXGI_FORMAT_D32_FLOAT;
-	DSV.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	DSV.Texture2D.MipSlice = 0;
-	DSV.Flags = D3D12_DSV_FLAG_NONE;
-
-	device->Get()->CreateDepthStencilView(depthBuffer.Get(), &DSV, DSVHeap->GetCPUHandleAt(0));
 }
 
 void Renderer::Render()

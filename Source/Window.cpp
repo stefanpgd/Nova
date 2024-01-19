@@ -21,9 +21,10 @@ Window::Window(const std::wstring& applicationName, unsigned int windowWidth, un
 	}
 
 	SetupWindow();
-
 	CreateSwapChain();
-	UpdateRenderTargetViews();
+
+	UpdateRenderTargets();
+	UpdateDepthBuffer();
 
 	scissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
 	viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(windowWidth), static_cast<float>(windowHeight));
@@ -62,7 +63,8 @@ void Window::Resize()
 		ThrowIfFailed(swapChain->GetDesc(&swapChainDesc));
 		ThrowIfFailed(swapChain->ResizeBuffers(BackBufferCount, windowWidth, windowHeight, swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
 
-		UpdateRenderTargetViews();
+		UpdateRenderTargets();
+		UpdateDepthBuffer();
 
 		viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(windowWidth), static_cast<float>(windowHeight));
 	}
@@ -164,7 +166,7 @@ void Window::CreateSwapChain()
 	ThrowIfFailed(swapChain1.As(&swapChain));
 }
 
-void Window::UpdateRenderTargetViews()
+void Window::UpdateRenderTargets()
 {
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 
@@ -178,4 +180,31 @@ void Window::UpdateRenderTargetViews()
 
 		backBuffers[i] = backBuffer;
 	}
+}
+
+void Window::UpdateDepthBuffer()
+{
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
+	DXDescriptorHeap* dsvHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+	D3D12_CLEAR_VALUE clearValue = {};
+	clearValue.Format = DXGI_FORMAT_D32_FLOAT;
+	clearValue.DepthStencil = { 1.0f, 0 };
+
+	CD3DX12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	CD3DX12_RESOURCE_DESC depthDescription = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT,
+		windowWidth, windowHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+
+	// Create Depth Buffer (based on window's size) //
+	ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE,
+		&depthDescription, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(&depthBuffer)));
+
+	// Create Depth-Stencil view //
+	D3D12_DEPTH_STENCIL_VIEW_DESC DSV;
+	DSV.Format = DXGI_FORMAT_D32_FLOAT;
+	DSV.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	DSV.Texture2D.MipSlice = 0;
+	DSV.Flags = D3D12_DSV_FLAG_NONE;
+
+	device->CreateDepthStencilView(depthBuffer.Get(), &DSV, dsvHeap->GetCPUHandleAt(0));
 }

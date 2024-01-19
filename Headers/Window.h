@@ -33,7 +33,9 @@ public:
 private:
 	void SetupWindow();
 	void CreateSwapChain();
-	void UpdateRenderTargetViews();
+
+	void UpdateRenderTargets();
+	void UpdateDepthBuffer();
 
 public:
 	static const unsigned int BackBufferCount = 3;
@@ -54,6 +56,9 @@ private:
 	ComPtr<IDXGISwapChain4> swapChain;
 	ComPtr<ID3D12Resource> backBuffers[BackBufferCount];
 	DXDescriptorHeap* rtvHeap;
+
+	// Depth Buffer //
+	ComPtr<ID3D12Resource> depthBuffer;
 
 	// Rasterizer Objects //
 	D3D12_VIEWPORT viewport;
