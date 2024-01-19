@@ -5,6 +5,10 @@
 #include <Windows.h>
 #include <cassert>
 
+#include <imgui_impl_win32.h>
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 // Engine contains main loop for the "framework"
 // Things like the OS loop can also be contained in here
 
@@ -65,6 +69,9 @@ LRESULT Engine::WindowsCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 		::PostQuitMessage(0);
 		break;
 	}
+
+	// ImGui Windows callback //
+	ImGui_ImplWin32_WndProcHandler(hwnd, message, wParam, lParam);
 
 	return ::DefWindowProcW(hwnd, message, wParam, lParam);
 }

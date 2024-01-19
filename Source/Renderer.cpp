@@ -15,6 +15,10 @@
 #include <d3dcompiler.h>
 #include <cassert>
 
+#include <imgui.h>
+#include <imgui_impl_win32.h>
+#include <imgui_impl_dx12.h>
+
 // TODO: Move depth stencil creation to the Window
 // TODO: Add depth stencil resize function and call it during actual resize...
 
@@ -42,11 +46,12 @@ Mesh* mesh;
 
 Renderer::Renderer(const std::wstring& applicationName)
 {
+	// Initialization for all vital components for rendering //
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	device = new DXDevice();
 
-	CSUHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1000);
+	CSUHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1000, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	DSVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 5);
 	RTVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 3);
 
@@ -55,6 +60,9 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	window = new Window(applicationName, width, height);
 
+	InitializeImGui();
+
+	// Pipeline & Test Meshes // 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
 	rootParameters[0].InitAsConstants(16, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
@@ -69,6 +77,16 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 void Renderer::Render()
 {
+	// TODO: add a start frame function //
+	ImGui_ImplDX12_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	// move to update? or somewhere else in engine
+	ImGui::ShowDemoWindow();
+
+	ImGui::Render();
+
 	const XMVECTOR eyePosition = XMVectorSet(0, 0, -10, 1);
 	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
 	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
@@ -133,6 +151,12 @@ void Renderer::Render()
 		x += 2.5;
 	}
 
+
+	ID3D12DescriptorHeap* heaps[] = { CSUHeap->GetAddress() };
+
+	commandList->SetDescriptorHeaps(1, heaps);
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
+
 	// 3. Transition to a Present state, then execute the commands and present the next back buffer //
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	directCommands->ExecuteCommandList(backBufferIndex);
@@ -142,6 +166,21 @@ void Renderer::Render()
 	directCommands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
 
 	frameCount++;
+}
+
+void Renderer::InitializeImGui()
+{
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+	ImGui::StyleColorsDark();
+	ImGui_ImplWin32_Init(window->GetHWND());
+
+	const unsigned int cbvIndex = CSUHeap->GetNextAvailableIndex();
+	ImGui_ImplDX12_Init(device->GetAddress(), Window::BackBufferCount, DXGI_FORMAT_R8G8B8A8_UNORM,
+		CSUHeap->GetAddress(), CSUHeap->GetCPUHandleAt(cbvIndex), CSUHeap->GetGPUHandleAt(cbvIndex));
 }
 
 #pragma region DXAccess Implementations

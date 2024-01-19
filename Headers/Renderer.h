@@ -18,6 +18,8 @@ public:
 	void Render();
 
 private:
+	void InitializeImGui();
+
 	DXRootSignature* rootSignature;
 	DXPipeline* pipeline;
 
