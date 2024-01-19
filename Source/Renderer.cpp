@@ -8,6 +8,7 @@
 #include "DXRootSignature.h"
 #include "DXPipeline.h"
 #include "Window.h"
+#include "Mesh.h"
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
@@ -31,44 +32,11 @@ namespace RendererInternal
 }
 using namespace RendererInternal;
 
-ComPtr<ID3D12Resource> vertexBuffer;
-D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
-
-ComPtr<ID3D12Resource> indexBuffer;
-D3D12_INDEX_BUFFER_VIEW indexBufferView;
-
-
 matrix model;
 matrix view;
 matrix projection;
 float FOV = 45.0f;
-
-struct Vertex
-{
-	float3 Position;
-	float3 Color;
-};
-
-static Vertex cubeBuffer[8] = {
-	{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }, // 0
-	{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }, // 1
-	{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) },  // 2
-	{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },  // 3
-	{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }, // 4
-	{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }, // 5
-	{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) },  // 6
-	{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }   // 7
-};
-
-static unsigned int cubeIndices[36] =
-{
-	0, 1, 2, 0, 2, 3,
-	4, 6, 5, 4, 7, 6,
-	4, 5, 1, 4, 1, 0,
-	3, 2, 6, 3, 6, 7,
-	1, 5, 6, 1, 6, 2,
-	4, 0, 3, 4, 3, 7
-};
+std::vector<Mesh*> meshes;
 
 Renderer::Renderer(const std::wstring& applicationName)
 {
@@ -90,31 +58,11 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	rootSignature = new DXRootSignature(rootParameters, 1, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
-
-	copyCommands->ResetCommandList();
-	ComPtr<ID3D12GraphicsCommandList2> copyCommandList = copyCommands->GetGraphicsCommandList();
-
-	ComPtr<ID3D12Resource> intermediateVertexBuffer;
-	UpdateBufferResource(copyCommandList, &vertexBuffer, &intermediateVertexBuffer, _countof(cubeBuffer),
-		sizeof(Vertex), cubeBuffer, D3D12_RESOURCE_FLAG_NONE);
-
-	// Create vertex view from the resources we just initialized
-	vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
-	vertexBufferView.SizeInBytes = sizeof(cubeBuffer);
-	vertexBufferView.StrideInBytes = sizeof(Vertex);
-
-	ComPtr<ID3D12Resource> intermediateIndexBuffer;
-	UpdateBufferResource(copyCommandList, &indexBuffer, &intermediateIndexBuffer, _countof(cubeIndices),
-		sizeof(unsigned int), cubeIndices, D3D12_RESOURCE_FLAG_NONE);
-
-	// Create vertex view from the resources we just initialized
-	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
-	indexBufferView.SizeInBytes = sizeof(cubeIndices);
-	indexBufferView.Format = DXGI_FORMAT_R32_UINT;
-
-	copyCommands->ExecuteCommandList(DXAccess::GetCurrentBackBufferIndex());
-	copyCommands->Signal();
-	copyCommands->WaitForFenceValue(DXAccess::GetCurrentBackBufferIndex());
+	
+	for (int i = 0; i < 5; i++)
+	{
+		meshes[i] = new Mesh();
+	}
 }
 
 void Renderer::Render()
@@ -164,8 +112,8 @@ void Renderer::Render()
 
 	// NEW: Setup Input Assembler //
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-	commandList->IASetIndexBuffer(&indexBufferView);
+	commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
+	commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());
 
 	// NEW: Rasterization Stage //
 	commandList->RSSetViewports(1, &window->GetViewport());
@@ -178,9 +126,7 @@ void Renderer::Render()
 	commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
 
 	// NEW: Draw Mesh //
-	commandList->DrawIndexedInstanced(_countof(cubeIndices), 1, 0, 0, 0);
-
-	int x = 0;
+	commandList->DrawIndexedInstanced(mesh->GetIndicesCount(), 1, 0, 0, 0);
 
 	// 3. Transition to a Present state, then execute the commands and present the next back buffer //
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);

@@ -145,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Mesh.cpp" />
     <ClCompile Include="Source\DXPipeline.cpp" />
     <ClCompile Include="Source\DXRootSignature.cpp" />
     <ClCompile Include="Source\DXDescriptorHeap.cpp" />
@@ -173,6 +174,7 @@
     <ClInclude Include="Headers\DXUtilities.h" />
     <ClInclude Include="Headers\Renderer.h" />
     <ClInclude Include="Headers\Window.h" />
+    <ClInclude Include="Headers\Mesh.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Source\Shaders\default.vertex.hlsl">
