@@ -38,6 +38,8 @@ matrix projection;
 float FOV = 45.0f;
 std::vector<Mesh*> meshes;
 
+Mesh* mesh;
+
 Renderer::Renderer(const std::wstring& applicationName)
 {
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -61,23 +63,12 @@ Renderer::Renderer(const std::wstring& applicationName)
 	
 	for (int i = 0; i < 5; i++)
 	{
-		meshes[i] = new Mesh();
+		meshes.push_back(new Mesh());
 	}
 }
 
 void Renderer::Render()
 {
-	// TODO: Move this stuff to an appropriate place
-	float angle = float(frameCount) * (90.0 / 144.0f);
-	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
-
-	matrix rot = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
-
-	float s = abs(cosf(float(frameCount) * 0.01));
-	model = XMMatrixScaling(s, s, s);
-	model = XMMatrixMultiply(model, rot);
-
-
 	const XMVECTOR eyePosition = XMVectorSet(0, 0, -10, 1);
 	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
 	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
@@ -106,27 +97,41 @@ void Renderer::Render()
 	commandList->ClearRenderTargetView(renderTarget, clearColor, 0, nullptr);
 	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 	// NEW: Set Pipeline & Root //
 	commandList->SetPipelineState(pipeline->GetAddress());
 	commandList->SetGraphicsRootSignature(rootSignature->GetAddress());
-
-	// NEW: Setup Input Assembler //
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
-	commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());
-
-	// NEW: Rasterization Stage //
 	commandList->RSSetViewports(1, &window->GetViewport());
 	commandList->RSSetScissorRects(1, &window->GetScissorRect());
-
-	// NEW: Setup Output Merger //
 	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
 
-	// NEW: Bind constants (mvp) //
-	commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
+	float x = -5;
+	for (Mesh* mesh : meshes)
+	{
+		float y = cosf(float(frameCount) / 1444.0 + (x * 0.5)) * 1.25f;
+		model = XMMatrixTranslation(x, y, 0);
+		const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
 
-	// NEW: Draw Mesh //
-	commandList->DrawIndexedInstanced(mesh->GetIndicesCount(), 1, 0, 0, 0);
+		matrix rot = XMMatrixRotationY(XMConvertToRadians(float(frameCount) / 54.0 * x));
+		model = XMMatrixMultiply(rot, model);
+
+		float s = 1.0 - (abs(x) * 0.15f);
+		matrix scale = XMMatrixScalingFromVector(XMVectorSet(s, s, s, 1.0f));
+		model = XMMatrixMultiply(scale, model);
+
+		matrix MVP = XMMatrixMultiply(model, view);
+		MVP = XMMatrixMultiply(MVP, projection);
+
+		commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
+		commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());
+
+		// Mvp needs to be set in Model, for now in here
+		commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
+
+		commandList->DrawIndexedInstanced(mesh->GetIndicesCount(), 1, 0, 0, 0);
+		x += 2.5;
+	}
 
 	// 3. Transition to a Present state, then execute the commands and present the next back buffer //
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -167,6 +172,9 @@ DXCommands* DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE type)
 		return directCommands;
 		break;
 	}
+
+	assert(false && "This command type hasn't been added yet!");
+	return nullptr;
 }
 
 unsigned int DXAccess::GetCurrentBackBufferIndex()
