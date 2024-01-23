@@ -19,9 +19,11 @@
 #include <imgui_impl_win32.h>
 #include <imgui_impl_dx12.h>
 
+#include "tiny_gltf.h"
+#include "Model.h"
+
 // TODO: Move depth stencil creation to the Window
 // TODO: Add depth stencil resize function and call it during actual resize...
-
 namespace RendererInternal
 {
 	Window* window = nullptr;
@@ -40,9 +42,8 @@ matrix model;
 matrix view;
 matrix projection;
 float FOV = 45.0f;
-std::vector<Mesh*> meshes;
 
-Mesh* mesh;
+std::vector<Model*> models;
 
 Renderer::Renderer(const std::wstring& applicationName)
 {
@@ -69,9 +70,9 @@ Renderer::Renderer(const std::wstring& applicationName)
 	rootSignature = new DXRootSignature(rootParameters, 1, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
 	
-	for (int i = 0; i < 5; i++)
+	for(int i = 0; i < 5; i++)
 	{
-		meshes.push_back(new Mesh());
+		models.push_back(new Model("Assets/Models/SciFiHelm/SciFiHelmet.gltf"));
 	}
 }
 
@@ -125,7 +126,7 @@ void Renderer::Render()
 	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
 
 	float x = -5;
-	for (Mesh* mesh : meshes)
+	for (Model* mesh : models)
 	{
 		float y = cosf(float(frameCount) / 1444.0 + (x * 0.5)) * 1.25f;
 		model = XMMatrixTranslation(x, y, 0);
@@ -141,13 +142,12 @@ void Renderer::Render()
 		matrix MVP = XMMatrixMultiply(model, view);
 		MVP = XMMatrixMultiply(MVP, projection);
 
-		commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
-		commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());
-
-		// Mvp needs to be set in Model, for now in here
+		// TODO: Mvp needs to be set in Model, for now in here
 		commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
 
-		commandList->DrawIndexedInstanced(mesh->GetIndicesCount(), 1, 0, 0, 0);
+		mesh->Draw();
+
+		
 		x += 2.5;
 	}
 

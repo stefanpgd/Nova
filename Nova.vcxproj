@@ -115,7 +115,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\Microsoft;$(SolutionDir)Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\tinyglTF;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\Microsoft;$(SolutionDir)Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -133,7 +133,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\Microsoft;$(SolutionDir)Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\tinyglTF;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\Microsoft;$(SolutionDir)Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -152,6 +152,8 @@
     <ClCompile Include="Dependencies\ImGui\imgui_impl_win32.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui_tables.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="Dependencies\tinyglTF\tiny_gltf.cpp" />
+    <ClCompile Include="Source\Model.cpp" />
     <ClCompile Include="Source\Mesh.cpp" />
     <ClCompile Include="Source\DXPipeline.cpp" />
     <ClCompile Include="Source\DXRootSignature.cpp" />
@@ -190,6 +192,7 @@
     <ClInclude Include="Headers\Renderer.h" />
     <ClInclude Include="Headers\Window.h" />
     <ClInclude Include="Headers\Mesh.h" />
+    <ClInclude Include="Headers\Model.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Source\Shaders\default.vertex.hlsl">

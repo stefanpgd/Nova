@@ -12,7 +12,7 @@ struct VertexPosColor
  
 struct VertexShaderOutput
 {
-	float4 Color : COLOR;
+	float3 Color : Color0;
 	float4 Position : SV_Position;
 };
  
@@ -21,7 +21,7 @@ VertexShaderOutput main(VertexPosColor IN)
 	VertexShaderOutput OUT;
  
 	OUT.Position = mul(Transform.MVP, float4(IN.Position, 1.0f));
-	OUT.Color = float4(IN.Color, 1.0f);
+    OUT.Color = normalize(mul(float4(IN.Color, 0.0), Transform.MVP).xyz);
  
 	return OUT;
 }
