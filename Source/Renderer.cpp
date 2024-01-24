@@ -70,9 +70,9 @@ Renderer::Renderer(const std::wstring& applicationName)
 	rootSignature = new DXRootSignature(rootParameters, 1, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
 	
-	for(int i = 0; i < 5; i++)
+	for(int i = 0; i < 1; i++)
 	{
-		models.push_back(new Model("Assets/Models/SciFiHelm/SciFiHelmet.gltf"));
+		models.push_back(new Model("Assets/Models/Engine/2CylinderEngine.gltf"));
 	}
 }
 
@@ -88,7 +88,7 @@ void Renderer::Render()
 
 	ImGui::Render();
 
-	const XMVECTOR eyePosition = XMVectorSet(0, 0, -10, 1);
+	const XMVECTOR eyePosition = XMVectorSet(0, 0, -20, 1);
 	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
 	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
 	view = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
@@ -97,6 +97,8 @@ void Renderer::Render()
 	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(FOV), aspectRatio, 0.01f, 1000.0f);
 
 	// NEW: Create MVP //
+	model = XMMatrixScaling(0.02f, 0.02f, 0.02f);
+
 	matrix MVP = XMMatrixMultiply(model, view);
 	MVP = XMMatrixMultiply(MVP, projection);
 
@@ -128,17 +130,6 @@ void Renderer::Render()
 	float x = -5;
 	for (Model* mesh : models)
 	{
-		float y = cosf(float(frameCount) / 1444.0 + (x * 0.5)) * 1.25f;
-		model = XMMatrixTranslation(x, y, 0);
-		const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
-
-		matrix rot = XMMatrixRotationY(XMConvertToRadians(float(frameCount) / 54.0 * x));
-		model = XMMatrixMultiply(rot, model);
-
-		float s = 1.0 - (abs(x) * 0.15f);
-		matrix scale = XMMatrixScalingFromVector(XMVectorSet(s, s, s, 1.0f));
-		model = XMMatrixMultiply(scale, model);
-
 		matrix MVP = XMMatrixMultiply(model, view);
 		MVP = XMMatrixMultiply(MVP, projection);
 
@@ -147,10 +138,8 @@ void Renderer::Render()
 
 		mesh->Draw();
 
-		
 		x += 2.5;
 	}
-
 
 	ID3D12DescriptorHeap* heaps[] = { CSUHeap->GetAddress() };
 

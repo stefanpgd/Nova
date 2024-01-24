@@ -7,11 +7,16 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Mesh& mesh)
 	// A 'Mesh' exists out of multiple primitives, usually this is one
 	// but it can be more. Each primitive contains the geometry data (triangles, lines etc. )
 	// to render the model
+
+	for(tinygltf::Primitive& primitive : mesh.primitives)
+
 	for (int i = 0; i < mesh.primitives.size(); i++)
 	{
-		LoadAttribute(model, mesh.primitives[i], "POSITION");
-		LoadAttribute(model, mesh.primitives[i], "NORMAL");
-		LoadIndices(model, mesh.primitives[i]);
+		LoadAttribute(model, primitive, "POSITION");
+		LoadAttribute(model, primitive, "NORMAL");
+
+		LoadMaterial(model, primitive);
+		LoadIndices(model, primitive);
 	}
 
 	UploadBuffers();
@@ -49,9 +54,19 @@ void Mesh::LoadAttribute(tinygltf::Model& model, tinygltf::Primitive& primitive,
 	tinygltf::Accessor& accessor = model.accessors[primitive.attributes.at(attributeType)];
 	tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
 	tinygltf::Buffer& buffer = model.buffers[view.buffer];
+	
+	// Component: default type like float, int
+	// Type: a structure made out of components, e.g VEC2 ( 2x float )
+	unsigned int componentSize = tinygltf::GetComponentSizeInBytes(accessor.componentType);
+	unsigned int objectSize = tinygltf::GetNumComponentsInType(accessor.type);
+	unsigned int dataSize = componentSize * objectSize; 
 
-	// Object: data structure that got created using components, such as a vec3 ( uses 3 floats )
-	unsigned int objectSize = accessor.ByteStride(view);
+	// Accessor byteoffset: Offset to first element of type
+	// BufferView byteoffset: Offset to get to this primitives buffer data in the overall buffer
+	unsigned int bufferStart = accessor.byteOffset + view.byteOffset;
+
+	// Stride: Distance in buffer till next elelemt occurs
+	unsigned int stride = accessor.ByteStride(view);
 
 	// In case it hasn't happened, resize the vertex buffer since we're 
 	// going to directly memcpy the data into an already existing buffer
@@ -63,16 +78,16 @@ void Mesh::LoadAttribute(tinygltf::Model& model, tinygltf::Primitive& primitive,
 	for (int i = 0; i < accessor.count; i++)
 	{
 		Vertex& vertex = vertices[i];
-		size_t bufferLocation = view.byteOffset + (i * objectSize);
+		size_t bufferLocation = bufferStart + (i * stride);
 
 		// TODO: Add 'offsetto' to this and use pointers to vertices instead of a reference
 		if (attributeType == "POSITION")
 		{
-			memcpy(&vertex.Position, &buffer.data[bufferLocation], objectSize);
+			memcpy(&vertex.Position, &buffer.data[bufferLocation], dataSize);
 		}
 		else if (attributeType == "NORMAL")
 		{
-			memcpy(&vertex.Normal, &buffer.data[bufferLocation], objectSize);
+			memcpy(&vertex.Normal, &buffer.data[bufferLocation], dataSize);
 		}
 	}
 }
@@ -84,26 +99,46 @@ void Mesh::LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	tinygltf::Buffer& buffer = model.buffers[view.buffer];
 
 	unsigned int componentSize = tinygltf::GetComponentSizeInBytes(accessor.componentType);
-	unsigned int objectSize = accessor.ByteStride(view);
+	unsigned int objectSize = tinygltf::GetNumComponentsInType(accessor.type);
+	unsigned int dataSize = componentSize * objectSize;
+
+	unsigned int bufferStart = accessor.byteOffset + view.byteOffset;
+	unsigned int stride = accessor.ByteStride(view);
 
 	for (int i = 0; i < accessor.count; i++)
 	{
-		unsigned int bufferLocation = view.byteOffset + (i * objectSize);
+		unsigned int bufferLocation = bufferStart + (i * stride);
 
 		// TODO: Test if casting directly might work?
 		if (componentSize == 2)
 		{
 			short index;
-			memcpy(&index, &buffer.data[bufferLocation], sizeof(short));
+			memcpy(&index, &buffer.data[bufferLocation], dataSize);
 			indices.push_back(index);
 		}
 
 		if (componentSize == 4)
 		{
 			unsigned int index;
-			memcpy(&index, &buffer.data[bufferLocation], sizeof(unsigned int));
+			memcpy(&index, &buffer.data[bufferLocation], dataSize);
 			indices.push_back(index);
 		}
+	}
+}
+
+void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
+{
+	// For now, do only color //
+	tinygltf::Accessor& accessor = model.accessors[primitive.attributes.at("POSITION")];
+	tinygltf::Material& material = model.materials[primitive.material];
+
+	for(int i = 0; i < accessor.count; i++)
+	{
+		Vertex& vertex = vertices[i];
+
+		vertex.Color.x = material.pbrMetallicRoughness.baseColorFactor[0];
+		vertex.Color.y = material.pbrMetallicRoughness.baseColorFactor[1];
+		vertex.Color.z = material.pbrMetallicRoughness.baseColorFactor[2];
 	}
 }
 

@@ -13,6 +13,7 @@ struct Vertex
 {
 	float3 Position;
 	float3 Normal;
+	float3 Color;
 };
 
 class Mesh
@@ -27,6 +28,7 @@ public:
 private:
 	void LoadAttribute(tinygltf::Model& model, tinygltf::Primitive& primitive, const std::string& attributeType);
 	void LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive);
+	void LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive);
 
 	void UploadBuffers();
 
