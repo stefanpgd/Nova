@@ -2,20 +2,22 @@
 #include "DXAccess.h"
 #include <cassert>
 
-Mesh::Mesh(tinygltf::Model& model, tinygltf::Mesh& mesh, XMMATRIX& transform)
+Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, XMMATRIX& transform)
 {
 	placeholderM = transform;
-
 	// A 'Mesh' exists out of multiple primitives, usually this is one
 	// but it can be more. Each primitive contains the geometry data (triangles, lines etc. )
 	// to render the model
-	for (tinygltf::Primitive& primitive : mesh.primitives)
-	{
-		LoadAttribute(model, primitive, "POSITION");
-		LoadAttribute(model, primitive, "NORMAL");
+	LoadAttribute(model, primitive, "POSITION");
+	LoadAttribute(model, primitive, "NORMAL");
 
-		LoadMaterial(model, primitive);
-		LoadIndices(model, primitive);
+	LoadMaterial(model, primitive);
+	LoadIndices(model, primitive);
+
+	if (indices.size() == 21717)
+	{
+		int x = 0;
+		x++;
 	}
 
 	ApplyNodeTransform(transform);
@@ -54,12 +56,12 @@ void Mesh::LoadAttribute(tinygltf::Model& model, tinygltf::Primitive& primitive,
 	tinygltf::Accessor& accessor = model.accessors[primitive.attributes.at(attributeType)];
 	tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
 	tinygltf::Buffer& buffer = model.buffers[view.buffer];
-	
+
 	// Component: default type like float, int
 	// Type: a structure made out of components, e.g VEC2 ( 2x float )
 	unsigned int componentSize = tinygltf::GetComponentSizeInBytes(accessor.componentType);
 	unsigned int objectSize = tinygltf::GetNumComponentsInType(accessor.type);
-	unsigned int dataSize = componentSize * objectSize; 
+	unsigned int dataSize = componentSize * objectSize;
 
 	// Accessor byteoffset: Offset to first element of type
 	// BufferView byteoffset: Offset to get to this primitives buffer data in the overall buffer
@@ -105,6 +107,8 @@ void Mesh::LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	unsigned int bufferStart = accessor.byteOffset + view.byteOffset;
 	unsigned int stride = accessor.ByteStride(view);
 
+
+
 	for (int i = 0; i < accessor.count; i++)
 	{
 		size_t bufferLocation = bufferStart + (i * stride);
@@ -130,7 +134,7 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	tinygltf::Accessor& accessor = model.accessors[primitive.attributes.at("POSITION")];
 	tinygltf::Material& material = model.materials[primitive.material];
 
-	for(int i = 0; i < accessor.count; i++)
+	for (int i = 0; i < accessor.count; i++)
 	{
 		Vertex& vertex = vertices[i];
 
@@ -163,7 +167,7 @@ void Mesh::UploadBuffers()
 	ComPtr<ID3D12Resource> intermediateVertexBuffer;
 	UpdateBufferResource(copyCommandList, &vertexBuffer, &intermediateVertexBuffer, vertices.size(),
 		sizeof(Vertex), vertices.data(), D3D12_RESOURCE_FLAG_NONE);
-	
+
 	ComPtr<ID3D12Resource> intermediateIndexBuffer;
 	UpdateBufferResource(copyCommandList, &indexBuffer, &intermediateIndexBuffer, indices.size(),
 		sizeof(unsigned int), indices.data(), D3D12_RESOURCE_FLAG_NONE);
@@ -172,7 +176,7 @@ void Mesh::UploadBuffers()
 	vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
 	vertexBufferView.SizeInBytes = vertices.size() * sizeof(Vertex);
 	vertexBufferView.StrideInBytes = sizeof(Vertex);
-	
+
 	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
 	indexBufferView.SizeInBytes = indices.size() * sizeof(unsigned int);
 	indexBufferView.Format = DXGI_FORMAT_R32_UINT;

@@ -19,7 +19,7 @@ struct Vertex
 class Mesh
 {
 public:
-	Mesh(tinygltf::Model& model, tinygltf::Mesh& mesh, matrix& transform);
+	Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, matrix& transform);
 
 	const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView();
 	const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView();

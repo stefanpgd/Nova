@@ -73,7 +73,12 @@ void Model::TraverseRootNodes(tinygltf::Model& model)
 
 		if (rootNode.mesh != -1)
 		{
-			meshes.push_back(new Mesh(model, model.meshes[rootNode.mesh], transform));
+			tinygltf::Mesh& mesh = model.meshes[rootNode.mesh];
+
+			for (tinygltf::Primitive& primitive : mesh.primitives)
+			{
+				meshes.push_back(new Mesh(model, primitive, transform));
+			}
 		}
 
 		// Process Child Nodes //
@@ -109,7 +114,12 @@ void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, mat
 	// 2. Apply to meshes in note //
 	if (node.mesh != -1)
 	{
-		meshes.push_back(new Mesh(model, model.meshes[node.mesh], transform));
+		tinygltf::Mesh& mesh = model.meshes[node.mesh];
+
+		for (tinygltf::Primitive& primitive : mesh.primitives)
+		{
+			meshes.push_back(new Mesh(model, primitive, transform));
+		}
 	}
 
 	// 3. Loop for children // 
