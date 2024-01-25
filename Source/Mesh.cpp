@@ -14,11 +14,6 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, XMMATRIX& tra
 	LoadMaterial(model, primitive);
 	LoadIndices(model, primitive);
 
-	if (indices.size() == 21717)
-	{
-		int x = 0;
-		x++;
-	}
 
 	ApplyNodeTransform(transform);
 	UploadBuffers();
