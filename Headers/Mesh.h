@@ -19,7 +19,7 @@ struct Vertex
 class Mesh
 {
 public:
-	Mesh(tinygltf::Model& model, tinygltf::Mesh& mesh);
+	Mesh(tinygltf::Model& model, tinygltf::Mesh& mesh, matrix& transform);
 
 	const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView();
 	const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView();
@@ -30,9 +30,13 @@ private:
 	void LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive);
 	void LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive);
 
+	void ApplyNodeTransform(matrix& transform);
 	void UploadBuffers();
 
+
 private:
+	matrix placeholderM;
+
 	ComPtr<ID3D12Resource> vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 

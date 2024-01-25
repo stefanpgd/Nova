@@ -72,7 +72,7 @@ Renderer::Renderer(const std::wstring& applicationName)
 	
 	for(int i = 0; i < 1; i++)
 	{
-		models.push_back(new Model("Assets/Models/Engine/2CylinderEngine.gltf"));
+		models.push_back(new Model("Assets/Models/Buggy/Buggy.gltf"));
 	}
 }
 
@@ -88,7 +88,7 @@ void Renderer::Render()
 
 	ImGui::Render();
 
-	const XMVECTOR eyePosition = XMVectorSet(0, 0, -20, 1);
+	const XMVECTOR eyePosition = XMVectorSet(0, 0, 20, 1);
 	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
 	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
 	view = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
@@ -97,7 +97,9 @@ void Renderer::Render()
 	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(FOV), aspectRatio, 0.01f, 1000.0f);
 
 	// NEW: Create MVP //
-	model = XMMatrixScaling(0.02f, 0.02f, 0.02f);
+	model = XMMatrixScaling(0.07f, 0.07f, 0.07f);
+	matrix rot = XMMatrixRotationY(float(frameCount) * 0.001f);
+	model = XMMatrixMultiply(model, rot);
 
 	matrix MVP = XMMatrixMultiply(model, view);
 	MVP = XMMatrixMultiply(MVP, projection);

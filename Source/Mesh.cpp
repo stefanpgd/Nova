@@ -2,15 +2,14 @@
 #include "DXAccess.h"
 #include <cassert>
 
-Mesh::Mesh(tinygltf::Model& model, tinygltf::Mesh& mesh)
+Mesh::Mesh(tinygltf::Model& model, tinygltf::Mesh& mesh, XMMATRIX& transform)
 {
+	placeholderM = transform;
+
 	// A 'Mesh' exists out of multiple primitives, usually this is one
 	// but it can be more. Each primitive contains the geometry data (triangles, lines etc. )
 	// to render the model
-
-	for(tinygltf::Primitive& primitive : mesh.primitives)
-
-	for (int i = 0; i < mesh.primitives.size(); i++)
+	for (tinygltf::Primitive& primitive : mesh.primitives)
 	{
 		LoadAttribute(model, primitive, "POSITION");
 		LoadAttribute(model, primitive, "NORMAL");
@@ -19,6 +18,7 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Mesh& mesh)
 		LoadIndices(model, primitive);
 	}
 
+	ApplyNodeTransform(transform);
 	UploadBuffers();
 }
 
@@ -107,17 +107,15 @@ void Mesh::LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive)
 
 	for (int i = 0; i < accessor.count; i++)
 	{
-		unsigned int bufferLocation = bufferStart + (i * stride);
+		size_t bufferLocation = bufferStart + (i * stride);
 
-		// TODO: Test if casting directly might work?
 		if (componentSize == 2)
 		{
 			short index;
 			memcpy(&index, &buffer.data[bufferLocation], dataSize);
 			indices.push_back(index);
 		}
-
-		if (componentSize == 4)
+		else if (componentSize == 4)
 		{
 			unsigned int index;
 			memcpy(&index, &buffer.data[bufferLocation], dataSize);
@@ -139,6 +137,19 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 		vertex.Color.x = material.pbrMetallicRoughness.baseColorFactor[0];
 		vertex.Color.y = material.pbrMetallicRoughness.baseColorFactor[1];
 		vertex.Color.z = material.pbrMetallicRoughness.baseColorFactor[2];
+	}
+}
+
+void Mesh::ApplyNodeTransform(matrix& transform)
+{
+	for (Vertex& vertex : vertices)
+	{
+		XMVECTOR vec = XMVectorSet(vertex.Position.x, vertex.Position.y, vertex.Position.z, 0.0f);
+		vec = XMVector3Transform(vec, placeholderM);
+
+		vertex.Position.x = XMVectorGetX(vec);
+		vertex.Position.y = XMVectorGetY(vec);
+		vertex.Position.z = XMVectorGetZ(vec);
 	}
 }
 
