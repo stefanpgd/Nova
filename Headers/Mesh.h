@@ -33,10 +33,7 @@ private:
 	void ApplyNodeTransform(matrix& transform);
 	void UploadBuffers();
 
-
 private:
-	matrix placeholderM;
-
 	ComPtr<ID3D12Resource> vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 

@@ -2,9 +2,8 @@
 #include "DXAccess.h"
 #include <cassert>
 
-Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, XMMATRIX& transform)
+Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, matrix& transform)
 {
-	placeholderM = transform;
 	// A 'Mesh' exists out of multiple primitives, usually this is one
 	// but it can be more. Each primitive contains the geometry data (triangles, lines etc. )
 	// to render the model
@@ -13,7 +12,6 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, XMMATRIX& tra
 
 	LoadMaterial(model, primitive);
 	LoadIndices(model, primitive);
-
 
 	ApplyNodeTransform(transform);
 	UploadBuffers();
@@ -102,8 +100,6 @@ void Mesh::LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	unsigned int bufferStart = accessor.byteOffset + view.byteOffset;
 	unsigned int stride = accessor.ByteStride(view);
 
-
-
 	for (int i = 0; i < accessor.count; i++)
 	{
 		size_t bufferLocation = bufferStart + (i * stride);
@@ -141,14 +137,24 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 
 void Mesh::ApplyNodeTransform(matrix& transform)
 {
+
+	// TODO: Replace with a more optimal approach once GLM is in...
 	for (Vertex& vertex : vertices)
 	{
 		XMVECTOR vec = XMVectorSet(vertex.Position.x, vertex.Position.y, vertex.Position.z, 0.0f);
-		vec = XMVector3Transform(vec, placeholderM);
+		vec = XMVector3Transform(vec, transform);
 
 		vertex.Position.x = XMVectorGetX(vec);
 		vertex.Position.y = XMVectorGetY(vec);
 		vertex.Position.z = XMVectorGetZ(vec);
+
+		matrix normalMatrix = transform;
+		XMVECTOR norm = XMVectorSet(vertex.Normal.x, vertex.Normal.y, vertex.Normal.z, 0.0f);
+		norm = XMVector4Transform(norm, normalMatrix);
+		
+		vertex.Normal.x = XMVectorGetX(norm);
+		vertex.Normal.y = XMVectorGetY(norm);
+		vertex.Normal.z = XMVectorGetZ(norm);
 	}
 }
 
