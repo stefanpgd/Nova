@@ -1,6 +1,7 @@
 #include "Model.h"
 #include "Mesh.h"
 #include "DXAccess.h"
+#include "Logger.h"
 
 Model::Model(const std::string& filePath)
 {
@@ -15,12 +16,12 @@ Model::Model(const std::string& filePath)
 
 	if(!warning.empty())
 	{
-		printf("Warning: %s\n", error.c_str());
+		LOG(Log::MessageType::Debug, warning);
 	}
 
 	if(!error.empty())
 	{
-		printf("Error: %s\n", error.c_str());
+		LOG(Log::MessageType::Error, error);
 	}
 
 	if(!result)

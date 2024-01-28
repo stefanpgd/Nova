@@ -1,6 +1,7 @@
 #include "DXRootSignature.h"
 #include "DXAccess.h"
 #include "DXUtilities.h"
+#include "Logger.h"
 
 #include <cassert>
 
@@ -28,7 +29,7 @@ DXRootSignature::DXRootSignature(CD3DX12_ROOT_PARAMETER1* rootParameters,
 	if(!rootSignatureError == NULL)
 	{
 		std::string buffer = std::string((char*)rootSignatureError->GetBufferPointer());
-		printf(buffer.c_str());
+		LOG(Log::MessageType::Error, buffer);
 		assert(false && "Compilation of shader failed, read console for errors.");
 	}
 

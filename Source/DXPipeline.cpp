@@ -6,6 +6,7 @@
 #include "DXUtilities.h"
 #include "DXAccess.h"
 #include "DXRootSignature.h"
+#include "Logger.h"
 
 DXPipeline::DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootSignature)
 {
@@ -34,7 +35,7 @@ void DXPipeline::CompileShaders(const std::string& vertexPath, const std::string
 	if(!vertexError == NULL)
 	{
 		std::string buffer = std::string((char*)vertexError->GetBufferPointer());
-		printf(buffer.c_str());
+		LOG(Log::MessageType::Error, buffer);
 		assert(false && "Compilation of shader failed, read console for errors.");
 	}
 
@@ -47,7 +48,7 @@ void DXPipeline::CompileShaders(const std::string& vertexPath, const std::string
 	if(!pixelError == NULL)
 	{
 		std::string buffer = std::string((char*)pixelError->GetBufferPointer());
-		printf(buffer.c_str());
+		LOG(Log::MessageType::Error, buffer);
 		assert(false && "Compilation of shader failed, read console for errors.");
 	}
 }
