@@ -22,6 +22,7 @@ public:
 	void Update(float deltaTime);
 	void Render();
 
+	void Resize();
 	void AddModel(const std::string& filePath);
 
 private:

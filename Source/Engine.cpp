@@ -12,6 +12,12 @@
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+namespace EngineInternal
+{
+	bool doResize = false;
+}
+using namespace EngineInternal;
+
 Engine::Engine(const std::wstring& applicationName) : applicationName(applicationName)
 {
 	RegisterWindowClass();
@@ -43,6 +49,12 @@ void Engine::Run()
 
 void Engine::Start()
 {
+	if(doResize)
+	{
+		renderer->Resize();
+		doResize = false;
+	}
+
 	// Delta time // 
 	auto t1 = std::chrono::time_point_cast<std::chrono::milliseconds>((clock->now())).time_since_epoch();
 	deltaTime = (t1 - t0).count() * .001;
@@ -97,6 +109,10 @@ LRESULT Engine::WindowsCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 	{
 	case WM_DESTROY:
 		::PostQuitMessage(0);
+		break;
+
+	case WM_SIZE:
+		doResize = true;
 		break;
 	}
 

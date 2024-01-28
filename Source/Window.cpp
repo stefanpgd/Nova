@@ -50,7 +50,7 @@ void Window::Resize()
 	if(windowWidth != width || windowHeight != height)
 	{
 		windowWidth = width > 1 ? width : 1;
-		windowWidth = height > 1 ? height : 1;
+		windowHeight = height > 1 ? height : 1;
 
 		for(int i = 0; i < BackBufferCount; ++i)
 		{
@@ -58,6 +58,7 @@ void Window::Resize()
 			// before the swap chain can be resized.
 			backBuffers[i].Reset();
 		}
+		depthBuffer.Reset();
 
 		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
 		ThrowIfFailed(swapChain->GetDesc(&swapChainDesc));

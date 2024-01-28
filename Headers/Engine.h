@@ -36,3 +36,4 @@ private:
 	std::chrono::high_resolution_clock* clock;
 	std::chrono::milliseconds t0;
 };
+

@@ -115,6 +115,14 @@ void Renderer::Render()
 	directCommands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
 }
 
+void Renderer::Resize()
+{
+	directCommands->Flush();
+
+	window->Resize();
+	camera->ResizeProjectionMatrix(window->GetWindowWidth(), window->GetWindowHeight());
+}
+
 void Renderer::AddModel(const std::string& filePath)
 {
 	models.push_back(new Model(filePath));

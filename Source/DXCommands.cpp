@@ -59,6 +59,8 @@ void DXCommands::Signal()
 
 void DXCommands::Flush()
 {
+	Signal();
+
 	for(int i = 0; i < commandAllocatorCount; i++)
 	{
 		WaitForFenceValue(i);
