@@ -34,8 +34,6 @@ namespace RendererInternal
 }
 using namespace RendererInternal;
 
-matrix model;
-
 Renderer::Renderer(const std::wstring& applicationName)
 {
 	// Initialization for all vital components for rendering //
@@ -72,13 +70,6 @@ void Renderer::Render()
 {
 	float aspectRatio = float(width) / float(height);
 
-	// NEW: Create MVP //
-	model = XMMatrixScaling(0.07f, 0.07f, 0.07f);
-	matrix rot = XMMatrixRotationY(elaspedTime);
-	model = XMMatrixMultiply(model, rot);
-
-	matrix MVP = XMMatrixMultiply(model, camera->GetViewProjectionMatrix());
-
 	// Grab all relevant objects for the draw call //
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
@@ -104,12 +95,10 @@ void Renderer::Render()
 	commandList->RSSetScissorRects(1, &window->GetScissorRect());
 	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
 
-	// TODO: Mvp needs to be set in Model, for now in here
-	commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
-
-	for (Model* mesh : models)
+	matrix viewProjection = camera->GetViewProjectionMatrix();
+	for (Model* model : models)
 	{
-		mesh->Draw();
+		model->Draw(viewProjection);
 	}
 
 	ID3D12DescriptorHeap* heaps[] = { CSUHeap->GetAddress() };

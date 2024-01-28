@@ -32,10 +32,13 @@ Model::Model(const std::string& filePath)
 	TraverseRootNodes(model);
 }
 
-void Model::Draw()
+void Model::Draw(matrix& viewProjection)
 {
 	ComPtr<ID3D12GraphicsCommandList2> commandList =
 		DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetGraphicsCommandList();
+
+	matrix MVP = XMMatrixMultiply(Transform.GetModelMatrix(), viewProjection);
+	commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
 
 	for(Mesh* mesh : meshes)
 	{

@@ -166,6 +166,7 @@
     <ClCompile Include="Source\Renderer.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\Window.cpp" />
+    <ClCompile Include="Source\Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Dependencies\Microsoft\d3dcompiler_47.dll">
@@ -198,6 +199,7 @@
     <ClInclude Include="Headers\Window.h" />
     <ClInclude Include="Headers\Mesh.h" />
     <ClInclude Include="Headers\Model.h" />
+    <ClInclude Include="Headers\Transform.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Source\Shaders\default.vertex.hlsl">

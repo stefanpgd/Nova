@@ -1,6 +1,7 @@
 #include "Engine.h"
 #include "Renderer.h"
 #include "Editor.h"
+#include "Logger.h"
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
