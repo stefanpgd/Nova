@@ -153,6 +153,7 @@
     <ClCompile Include="Dependencies\ImGui\imgui_tables.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Dependencies\tinyglTF\tiny_gltf.cpp" />
+    <ClCompile Include="Source\Editor.cpp" />
     <ClCompile Include="Source\Model.cpp" />
     <ClCompile Include="Source\Mesh.cpp" />
     <ClCompile Include="Source\DXPipeline.cpp" />
@@ -181,6 +182,7 @@
     <ClInclude Include="Dependencies\ImGui\imstb_rectpack.h" />
     <ClInclude Include="Dependencies\ImGui\imstb_textedit.h" />
     <ClInclude Include="Dependencies\ImGui\imstb_truetype.h" />
+    <ClInclude Include="Headers\Editor.h" />
     <ClInclude Include="Headers\DXPipeline.h" />
     <ClInclude Include="Headers\DXRootSignature.h" />
     <ClInclude Include="Headers\DXDescriptorHeap.h" />
@@ -189,6 +191,7 @@
     <ClInclude Include="Headers\DXCommands.h" />
     <ClInclude Include="Headers\Engine.h" />
     <ClInclude Include="Headers\DXUtilities.h" />
+    <ClInclude Include="Headers\Logger.h" />
     <ClInclude Include="Headers\Renderer.h" />
     <ClInclude Include="Headers\Window.h" />
     <ClInclude Include="Headers\Mesh.h" />

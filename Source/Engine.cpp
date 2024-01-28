@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include "Renderer.h"
+#include "Editor.h"
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
@@ -14,6 +15,7 @@ Engine::Engine(const std::wstring& applicationName) : applicationName(applicatio
 {
 	RegisterWindowClass();
 	renderer = new Renderer(this->applicationName);
+	editor = new Editor();
 
 	clock = new std::chrono::high_resolution_clock();
 	t0 = std::chrono::time_point_cast<std::chrono::milliseconds>((clock->now())).time_since_epoch();
@@ -54,6 +56,8 @@ void Engine::Update()
 {
 	// Placeholder // 
 	ImGui::ShowDemoWindow();
+
+	renderer->Update(deltaTime);
 }
 
 void Engine::Render()

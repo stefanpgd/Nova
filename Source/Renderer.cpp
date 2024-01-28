@@ -75,6 +75,11 @@ Renderer::Renderer(const std::wstring& applicationName)
 	}
 }
 
+void Renderer::Update(float deltaTime)
+{
+	elaspedTime += deltaTime;
+}
+
 void Renderer::Render()
 {
 	const XMVECTOR eyePosition = XMVectorSet(0, 0, 20, 1);
@@ -87,7 +92,7 @@ void Renderer::Render()
 
 	// NEW: Create MVP //
 	model = XMMatrixScaling(0.07f, 0.07f, 0.07f);
-	matrix rot = XMMatrixRotationY(float(frameCount) * 0.001f);
+	matrix rot = XMMatrixRotationY(elaspedTime);
 	model = XMMatrixMultiply(model, rot);
 
 	matrix MVP = XMMatrixMultiply(model, view);
@@ -144,8 +149,6 @@ void Renderer::Render()
 
 	// 4. Before we go to the next cycle, we gotta make sure that back buffer is available for use //
 	directCommands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
-
-	frameCount++;
 }
 
 void Renderer::InitializeImGui()

@@ -7,6 +7,7 @@
 #include <Windows.h>
 
 class Renderer;
+class Editor;
 
 class Engine
 {
@@ -28,6 +29,7 @@ private:
 	bool runApplication = true;
 	std::wstring applicationName;
 	Renderer* renderer;
+	Editor* editor;
 
 	// Time //
 	float deltaTime = 1.0f;

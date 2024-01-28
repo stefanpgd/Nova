@@ -15,6 +15,7 @@ class Renderer
 public:
 	Renderer(const std::wstring& applicationName);
 
+	void Update(float deltaTime);
 	void Render();
 
 private:
@@ -23,7 +24,8 @@ private:
 	DXRootSignature* rootSignature;
 	DXPipeline* pipeline;
 
-	unsigned int frameCount = 0;
+	float elaspedTime = 0.0f;
+
 	unsigned int width = 1080;
 	unsigned int height = 720;
 };
