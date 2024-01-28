@@ -2,7 +2,7 @@
 
 bool Input::GetKey(KeyCode key)
 {
-	return ImGui::IsKeyPressed(ImGuiKey(key));
+	return ImGui::IsKeyDown(ImGuiKey(key));
 }
 
 bool Input::GetMouseButton(MouseCode button)

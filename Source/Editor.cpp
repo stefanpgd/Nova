@@ -17,7 +17,10 @@ Editor::Editor(Renderer* renderer) : renderer(renderer)
 
 void Editor::Update(float deltaTime)
 {
+	this->deltaTime = deltaTime;
+
 	ModelSelectionWindow();
+	StatisticsWindow();
 }
 
 void Editor::ModelSelectionWindow()
@@ -49,6 +52,15 @@ void Editor::ModelSelectionWindow()
 		renderer->AddModel(modelFilePaths[currentModelID]);
 	}
 
+	ImGui::End();
+}
+
+void Editor::StatisticsWindow()
+{
+	ImGui::Begin("Statistics");
+	ImGui::SeparatorText("Stats");
+
+	ImGui::Text("FPS: %i", int(1.0f / deltaTime));
 	ImGui::End();
 }
 

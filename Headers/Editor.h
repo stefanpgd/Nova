@@ -18,11 +18,13 @@ public:
 private:
 	// Editor Windows //
 	void ModelSelectionWindow();
+	void StatisticsWindow();
 
 	void LoadModelFilePaths(std::string path, std::string originalPath);
 	void ImGuiStyleSettings();
 
 private:
+	float deltaTime;
 	Renderer* renderer;
 
 	// ImGui Editor //

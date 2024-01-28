@@ -7,6 +7,8 @@ class Camera
 public: 
 	Camera(int windowWidth, int windowHeight);
 
+	void Update(float deltaTime);
+
 	void UpdateViewMatrix();
 	void ResizeProjectionMatrix(int windowWidth, int windowHeight);
 
@@ -21,4 +23,8 @@ private:
 
 	float FOV = 60.0f;
 	float aspectRatio;
+
+	float3 position;
+	float speed = 12.0f;
+	float speedMultiplier = 6.0f;
 };

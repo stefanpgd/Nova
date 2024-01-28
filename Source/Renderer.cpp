@@ -64,6 +64,8 @@ Renderer::Renderer(const std::wstring& applicationName)
 void Renderer::Update(float deltaTime)
 {
 	elaspedTime += deltaTime;
+
+	camera->Update(deltaTime);
 }
 
 void Renderer::Render()
