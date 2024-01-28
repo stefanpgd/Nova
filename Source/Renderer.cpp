@@ -1,5 +1,6 @@
 #include "Renderer.h"
 
+// DirectX Components //
 #include "DXAccess.h"
 #include "DXDevice.h"
 #include "DXCommands.h"
@@ -7,20 +8,16 @@
 #include "DXDescriptorHeap.h"
 #include "DXRootSignature.h"
 #include "DXPipeline.h"
+
+// Renderer Components //
 #include "Window.h"
-#include "Mesh.h"
+#include "Model.h"
+#include "Camera.h"
 
-#define WIN32_LEAN_AND_MEAN 
-#include <Windows.h>
-#include <d3dcompiler.h>
 #include <cassert>
-
 #include <imgui.h>
 #include <imgui_impl_win32.h>
 #include <imgui_impl_dx12.h>
-
-#include "tiny_gltf.h"
-#include "Model.h"
 
 // TODO: Add depth stencil resize function and call it during actual resize...
 namespace RendererInternal
@@ -38,11 +35,6 @@ namespace RendererInternal
 using namespace RendererInternal;
 
 matrix model;
-matrix view;
-matrix projection;
-float FOV = 45.0f;
-
-std::vector<Model*> models;
 
 Renderer::Renderer(const std::wstring& applicationName)
 {
@@ -59,6 +51,7 @@ Renderer::Renderer(const std::wstring& applicationName)
 	copyCommands = new DXCommands(D3D12_COMMAND_LIST_TYPE_DIRECT, 1);
 
 	window = new Window(applicationName, width, height);
+	camera = new Camera(width, height);
 
 	InitializeImGui();
 
@@ -77,21 +70,14 @@ void Renderer::Update(float deltaTime)
 
 void Renderer::Render()
 {
-	const XMVECTOR eyePosition = XMVectorSet(0, 0, 20, 1);
-	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
-	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
-	view = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
-
 	float aspectRatio = float(width) / float(height);
-	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(FOV), aspectRatio, 0.01f, 1000.0f);
 
 	// NEW: Create MVP //
 	model = XMMatrixScaling(0.07f, 0.07f, 0.07f);
 	matrix rot = XMMatrixRotationY(elaspedTime);
 	model = XMMatrixMultiply(model, rot);
 
-	matrix MVP = XMMatrixMultiply(model, view);
-	MVP = XMMatrixMultiply(MVP, projection);
+	matrix MVP = XMMatrixMultiply(model, camera->GetViewProjectionMatrix());
 
 	// Grab all relevant objects for the draw call //
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
@@ -118,18 +104,12 @@ void Renderer::Render()
 	commandList->RSSetScissorRects(1, &window->GetScissorRect());
 	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
 
-	float x = -5;
+	// TODO: Mvp needs to be set in Model, for now in here
+	commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
+
 	for (Model* mesh : models)
 	{
-		matrix MVP = XMMatrixMultiply(model, view);
-		MVP = XMMatrixMultiply(MVP, projection);
-
-		// TODO: Mvp needs to be set in Model, for now in here
-		commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
-
 		mesh->Draw();
-
-		x += 2.5;
 	}
 
 	ID3D12DescriptorHeap* heaps[] = { CSUHeap->GetAddress() };
