@@ -2,6 +2,7 @@
 #include "Renderer.h"
 #include "Editor.h"
 #include "Logger.h"
+#include "Input.h"
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
@@ -67,8 +68,12 @@ void Engine::Start()
 
 void Engine::Update()
 {
-	// Placeholder // 
-	ImGui::ShowDemoWindow();
+#if _DEBUG
+	if(Input::GetKey(KeyCode::Escape))
+	{
+		runApplication = false;
+	}
+#endif
 
 	editor->Update(deltaTime);
 	renderer->Update(deltaTime);
