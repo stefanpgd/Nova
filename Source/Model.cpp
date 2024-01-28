@@ -33,7 +33,7 @@ Model::Model(const std::string& filePath)
 
 void Model::Draw()
 {
-	ComPtr<ID3D12GraphicsCommandList2> commandList = 
+	ComPtr<ID3D12GraphicsCommandList2> commandList =
 		DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetGraphicsCommandList();
 
 	for(Mesh* mesh : meshes)
@@ -51,19 +51,19 @@ void Model::TraverseRootNodes(tinygltf::Model& model)
 	XMMATRIX transform;
 
 	// Traverse the 'root' nodes from the scene
-	for (int i = 0; i < scene.nodes.size(); i++)
+	for(int i = 0; i < scene.nodes.size(); i++)
 	{
 		tinygltf::Node& rootNode = model.nodes[scene.nodes[i]];
-	
-		if (rootNode.matrix.size() > 0)
+
+		if(rootNode.matrix.size() > 0)
 		{
 			// Converting from double to float...
 			std::vector<float> matrix;
-			for (int j = 0; j < 16; j++)
+			for(int j = 0; j < 16; j++)
 			{
 				matrix.push_back(rootNode.matrix[j]);
 			}
-	
+
 			transform = XMMATRIX(matrix.data());
 		}
 		else
@@ -71,18 +71,18 @@ void Model::TraverseRootNodes(tinygltf::Model& model)
 			transform = XMMatrixIdentity();
 		}
 
-		if (rootNode.mesh != -1)
+		if(rootNode.mesh != -1)
 		{
 			tinygltf::Mesh& mesh = model.meshes[rootNode.mesh];
 
-			for (tinygltf::Primitive& primitive : mesh.primitives)
+			for(tinygltf::Primitive& primitive : mesh.primitives)
 			{
 				meshes.push_back(new Mesh(model, primitive, transform));
 			}
 		}
 
 		// Process Child Nodes //
-		for (int noteID : rootNode.children)
+		for(int noteID : rootNode.children)
 		{
 			TraverseChildNodes(model, model.nodes[noteID], transform);
 		}
@@ -94,10 +94,10 @@ void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, mat
 	XMMATRIX transform;
 
 	// 1. Load matrix for note //
-	if (node.matrix.size() > 0)
+	if(node.matrix.size() > 0)
 	{
 		std::vector<float> matrix;
-		for (int i = 0; i < 16; i++)
+		for(int i = 0; i < 16; i++)
 		{
 			matrix.push_back(node.matrix[i]);
 		}
@@ -112,18 +112,18 @@ void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, mat
 	transform = XMMatrixMultiply(transform, parentMatrix);
 
 	// 2. Apply to meshes in note //
-	if (node.mesh != -1)
+	if(node.mesh != -1)
 	{
 		tinygltf::Mesh& mesh = model.meshes[node.mesh];
 
-		for (tinygltf::Primitive& primitive : mesh.primitives)
+		for(tinygltf::Primitive& primitive : mesh.primitives)
 		{
 			meshes.push_back(new Mesh(model, primitive, transform));
 		}
 	}
 
 	// 3. Loop for children // 
-	for (int noteID : node.children)
+	for(int noteID : node.children)
 	{
 		TraverseChildNodes(model, model.nodes[noteID], transform);
 	}

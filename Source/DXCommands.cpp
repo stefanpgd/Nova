@@ -57,13 +57,8 @@ void DXCommands::Signal()
 	ThrowIfFailed(commandQueue->Signal(fence.Get(), fenceValue));
 }
 
-/// <summary>
-/// Forces the CPU to stall until every executed command list has finished executing
-/// </summary>
 void DXCommands::Flush()
 {
-	Signal();
-
 	for(int i = 0; i < commandAllocatorCount; i++)
 	{
 		WaitForFenceValue(i);

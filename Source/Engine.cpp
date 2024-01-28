@@ -3,24 +3,20 @@
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
-#include <cassert>
 
+#include <cassert>
 #include <imgui_impl_win32.h>
+#include <imgui_impl_dx12.h>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-// Engine contains main loop for the "framework"
-// Things like the OS loop can also be contained in here
-
-// Things that need to be initialized here?
-// - Renderer
-// - Input
-// - Audio?
-// - ImGui?
 Engine::Engine(const std::wstring& applicationName) : applicationName(applicationName)
 {
 	RegisterWindowClass();
 	renderer = new Renderer(this->applicationName);
+
+	clock = new std::chrono::high_resolution_clock();
+	t0 = std::chrono::time_point_cast<std::chrono::milliseconds>((clock->now())).time_since_epoch();
 }
 
 void Engine::Run()
@@ -28,14 +24,42 @@ void Engine::Run()
 	MSG msg = {};
 	while(runApplication && msg.message != WM_QUIT)
 	{
+		// Window's Callback //
 		if(::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			::TranslateMessage(&msg);
 			::DispatchMessage(&msg);
 		}
 
-		renderer->Render();
+		// Engine Loop //
+		Start();
+		Update();
+		Render();
 	}
+}
+
+void Engine::Start()
+{
+	// Delta time // 
+	auto t1 = std::chrono::time_point_cast<std::chrono::milliseconds>((clock->now())).time_since_epoch();
+	deltaTime = (t1 - t0).count() * .001;
+	t0 = t1;
+
+	ImGui_ImplDX12_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+}
+
+void Engine::Update()
+{
+	// Placeholder // 
+	ImGui::ShowDemoWindow();
+}
+
+void Engine::Render()
+{
+	ImGui::Render();
+	renderer->Render();
 }
 
 void Engine::RegisterWindowClass()

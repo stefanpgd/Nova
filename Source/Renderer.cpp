@@ -22,7 +22,6 @@
 #include "tiny_gltf.h"
 #include "Model.h"
 
-// TODO: Move depth stencil creation to the Window
 // TODO: Add depth stencil resize function and call it during actual resize...
 namespace RendererInternal
 {
@@ -78,16 +77,6 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 void Renderer::Render()
 {
-	// TODO: add a start frame function //
-	ImGui_ImplDX12_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
-
-	// move to update? or somewhere else in engine
-	ImGui::ShowDemoWindow();
-
-	ImGui::Render();
-
 	const XMVECTOR eyePosition = XMVectorSet(0, 0, 20, 1);
 	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
 	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
