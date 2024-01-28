@@ -1,9 +1,11 @@
 #include "Editor.h"
+#include "Renderer.h"
 #include "Logger.h"
+
 #include <imgui.h>
 #include <filesystem>
 
-Editor::Editor()
+Editor::Editor(Renderer* renderer) : renderer(renderer)
 {
 	ImGuiStyleSettings();
 
@@ -11,6 +13,43 @@ Editor::Editor()
 
 	std::string modelCount = std::to_string(modelFilePaths.size());
 	LOG("Found " + modelCount + " usable glTF(s) inside of 'Assets/Models'");
+}
+
+void Editor::Update(float deltaTime)
+{
+	ModelSelectionWindow();
+}
+
+void Editor::ModelSelectionWindow()
+{
+	ImGui::Begin("Model Selection");
+
+	std::string& selectedPath = displayNames[currentModelID];
+	if(ImGui::BeginCombo("Model File", selectedPath.c_str()))
+	{
+		for(int i = 0; i < displayNames.size(); i++)
+		{
+			bool isSelected = currentModelID == i;
+
+			if(ImGui::Selectable(displayNames[i].c_str(), isSelected))
+			{
+				currentModelID = i;
+			}
+
+			if(isSelected)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	if(ImGui::Button("Load Model"))
+	{
+		renderer->AddModel(modelFilePaths[currentModelID]);
+	}
+
+	ImGui::End();
 }
 
 void Editor::LoadModelFilePaths(std::string path, std::string originalPath)
@@ -27,6 +66,7 @@ void Editor::LoadModelFilePaths(std::string path, std::string originalPath)
 
 		if(fileType == "gltf")
 		{
+			displayNames.push_back(filePath.substr(filePath.find_last_of('\\') + 1));
 			modelFilePaths.push_back(filePath.c_str());
 		}
 	}

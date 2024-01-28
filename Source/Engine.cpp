@@ -15,7 +15,7 @@ Engine::Engine(const std::wstring& applicationName) : applicationName(applicatio
 {
 	RegisterWindowClass();
 	renderer = new Renderer(this->applicationName);
-	editor = new Editor();
+	editor = new Editor(renderer);
 
 	clock = new std::chrono::high_resolution_clock();
 	t0 = std::chrono::time_point_cast<std::chrono::milliseconds>((clock->now())).time_since_epoch();
@@ -57,6 +57,7 @@ void Engine::Update()
 	// Placeholder // 
 	ImGui::ShowDemoWindow();
 
+	editor->Update(deltaTime);
 	renderer->Update(deltaTime);
 }
 

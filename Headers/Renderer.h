@@ -18,6 +18,8 @@ public:
 	void Update(float deltaTime);
 	void Render();
 
+	void AddModel(const std::string& filePath);
+
 private:
 	void InitializeImGui();
 

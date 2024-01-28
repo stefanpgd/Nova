@@ -68,11 +68,6 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	rootSignature = new DXRootSignature(rootParameters, 1, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
-	
-	for(int i = 0; i < 1; i++)
-	{
-		models.push_back(new Model("Assets/Models/Buggy/Buggy.gltf"));
-	}
 }
 
 void Renderer::Update(float deltaTime)
@@ -149,6 +144,11 @@ void Renderer::Render()
 
 	// 4. Before we go to the next cycle, we gotta make sure that back buffer is available for use //
 	directCommands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
+}
+
+void Renderer::AddModel(const std::string& filePath)
+{
+	models.push_back(new Model(filePath));
 }
 
 void Renderer::InitializeImGui()
