@@ -202,6 +202,7 @@
     <ClInclude Include="Headers\Model.h" />
     <ClInclude Include="Headers\Transform.h" />
     <ClInclude Include="Headers\Input.h" />
+    <ClInclude Include="Headers\Mathematics.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Source\Shaders\default.vertex.hlsl">

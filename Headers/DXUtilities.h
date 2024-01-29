@@ -4,14 +4,11 @@
 #undef max
 #endif
 
+#include <exception>
+#include <cassert>
+
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#include <exception>
-#include <DirectXMath.h>
-
-using namespace DirectX;
-typedef DirectX::XMMATRIX matrix;
-typedef DirectX::XMFLOAT3 float3;
 
 #include "DXAccess.h"
 #include "DXCommands.h"

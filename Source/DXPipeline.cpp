@@ -70,6 +70,7 @@ void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
 	{
 		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
 		CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
+		CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
 		CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
 		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
 		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
@@ -81,8 +82,13 @@ void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
 	rtvFormats.NumRenderTargets = 1;
 	rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 
+	CD3DX12_RASTERIZER_DESC rasterizerDesc = {};
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+
 	PSS.RootSignature = rootSignature->Get().Get();
 	PSS.InputLayout = { inputLayout, _countof(inputLayout) };
+	PSS.Rasterizer = rasterizerDesc;
 	PSS.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	PSS.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	PSS.RTVFormats = rtvFormats;

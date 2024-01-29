@@ -1,6 +1,5 @@
 #pragma once
-
-#include "DXUtilities.h"
+#include "Mathematics.h"
 
 class Camera
 {
@@ -12,19 +11,22 @@ public:
 	void UpdateViewMatrix();
 	void ResizeProjectionMatrix(int windowWidth, int windowHeight);
 
-	matrix GetViewProjectionMatrix();
+	const glm::mat4& GetViewProjectionMatrix();
 
-	const matrix& GetViewMatrix();
-	const matrix& GetProjectionMatrix();
+	const glm::mat4& GetViewMatrix();
+	const glm::mat4& GetProjectionMatrix();
 
 private:
-	matrix view;
-	matrix projection;
+	glm::mat4 view;
+	glm::mat4 projection;
+	glm::mat4 viewProjection; // stored locally for data copying
 
 	float FOV = 60.0f;
+	float nearClip = 0.01f;
+	float farClip = 1000.0f;
 	float aspectRatio;
 
-	float3 position;
+	glm::vec3 position;
 	float speed = 12.0f;
 	float speedMultiplier = 6.0f;
 };

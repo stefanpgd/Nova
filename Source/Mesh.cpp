@@ -1,8 +1,9 @@
 #include "Mesh.h"
 #include "DXAccess.h"
 #include <cassert>
+#include "DXUtilities.h"
 
-Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, matrix& transform)
+Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, glm::mat4& transform)
 {
 	// A 'Mesh' exists out of multiple primitives, usually this is one
 	// but it can be more. Each primitive contains the geometry data (triangles, lines etc. )
@@ -13,7 +14,7 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, matrix& trans
 	LoadMaterial(model, primitive);
 	LoadIndices(model, primitive);
 
-	ApplyNodeTransform(transform);
+	//ApplyNodeTransform(transform);
 	UploadBuffers();
 }
 
@@ -129,32 +130,31 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	{
 		Vertex& vertex = vertices[i];
 
+		// TODO: Memcpy or send pointer
 		vertex.Color.x = material.pbrMetallicRoughness.baseColorFactor[0];
 		vertex.Color.y = material.pbrMetallicRoughness.baseColorFactor[1];
 		vertex.Color.z = material.pbrMetallicRoughness.baseColorFactor[2];
 	}
 }
 
-void Mesh::ApplyNodeTransform(matrix& transform)
+void Mesh::ApplyNodeTransform(glm::mat4& transform)
 {
-
-	// TODO: Replace with a more optimal approach once GLM is in...
+	// TODO: Check if it can be optimized or something with GLM, or if vec3s work
 	for (Vertex& vertex : vertices)
 	{
-		XMVECTOR vec = XMVectorSet(vertex.Position.x, vertex.Position.y, vertex.Position.z, 0.0f);
-		vec = XMVector3Transform(vec, transform);
-
-		vertex.Position.x = XMVectorGetX(vec);
-		vertex.Position.y = XMVectorGetY(vec);
-		vertex.Position.z = XMVectorGetZ(vec);
-
-		matrix normalMatrix = transform;
-		XMVECTOR norm = XMVectorSet(vertex.Normal.x, vertex.Normal.y, vertex.Normal.z, 0.0f);
-		norm = XMVector4Transform(norm, normalMatrix);
+		glm::vec4 vert = glm::vec4(vertex.Position.x, vertex.Position.y, vertex.Position.z, 0.0f);
+		vert = vert * transform;
 		
-		vertex.Normal.x = XMVectorGetX(norm);
-		vertex.Normal.y = XMVectorGetY(norm);
-		vertex.Normal.z = XMVectorGetZ(norm);
+		vertex.Position.x = vert.x;
+		vertex.Position.y = vert.y;
+		vertex.Position.z = vert.z;
+
+		glm::vec4 norm = glm::vec4(vertex.Normal.x, vertex.Normal.y, vertex.Normal.z, 0.0f);
+		norm = norm * transform;
+
+		vertex.Normal.x = norm.x;
+		vertex.Normal.y = norm.y;
+		vertex.Normal.z = norm.z;
 	}
 }
 

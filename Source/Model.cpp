@@ -2,6 +2,7 @@
 #include "Mesh.h"
 #include "DXAccess.h"
 #include "Logger.h"
+#include "Mathematics.h"
 
 Model::Model(const std::string& filePath)
 {
@@ -32,12 +33,12 @@ Model::Model(const std::string& filePath)
 	TraverseRootNodes(model);
 }
 
-void Model::Draw(matrix& viewProjection)
+void Model::Draw(const glm::mat4& viewProjection)
 {
 	ComPtr<ID3D12GraphicsCommandList2> commandList =
 		DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetGraphicsCommandList();
 
-	matrix MVP = XMMatrixMultiply(Transform.GetModelMatrix(), viewProjection);
+	glm::mat4 MVP = viewProjection * Transform.GetModelMatrix();
 	commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
 
 	for(Mesh* mesh : meshes)
@@ -52,7 +53,7 @@ void Model::Draw(matrix& viewProjection)
 void Model::TraverseRootNodes(tinygltf::Model& model)
 {
 	auto scene = model.scenes[model.defaultScene];
-	XMMATRIX transform;
+	glm::mat4 transform;
 
 	// Traverse the 'root' nodes from the scene
 	for(int i = 0; i < scene.nodes.size(); i++)
@@ -68,11 +69,7 @@ void Model::TraverseRootNodes(tinygltf::Model& model)
 				matrix.push_back(rootNode.matrix[j]);
 			}
 
-			transform = XMMATRIX(matrix.data());
-		}
-		else
-		{
-			transform = XMMatrixIdentity();
+			transform = glm::make_mat4(matrix.data());
 		}
 
 		if(rootNode.mesh != -1)
@@ -93,9 +90,9 @@ void Model::TraverseRootNodes(tinygltf::Model& model)
 	}
 }
 
-void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, matrix& parentMatrix)
+void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, glm::mat4& parentMatrix)
 {
-	XMMATRIX transform;
+	glm::mat4 transform;
 
 	// 1. Load matrix for note //
 	if(node.matrix.size() > 0)
@@ -106,14 +103,10 @@ void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, mat
 			matrix.push_back(node.matrix[i]);
 		}
 
-		transform = XMMATRIX(matrix.data());
-	}
-	else
-	{
-		transform = XMMatrixIdentity();
+		transform = glm::make_mat4(matrix.data());
 	}
 
-	transform = XMMatrixMultiply(transform, parentMatrix);
+	transform = parentMatrix * transform;
 
 	// 2. Apply to meshes in note //
 	if(node.mesh != -1)

@@ -6,20 +6,20 @@
 #include <wrl.h>
 using namespace Microsoft::WRL;
 
-#include "DXUtilities.h"
+#include "Mathematics.h"
 #include "tiny_gltf.h"
 
 struct Vertex
 {
-	float3 Position;
-	float3 Normal;
-	float3 Color;
+	glm::vec3 Position;
+	glm::vec3 Normal;
+	glm::vec3 Color;
 };
 
 class Mesh
 {
 public:
-	Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, matrix& transform);
+	Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, glm::mat4& transform);
 
 	const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView();
 	const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView();
@@ -30,7 +30,7 @@ private:
 	void LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive);
 	void LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive);
 
-	void ApplyNodeTransform(matrix& transform);
+	void ApplyNodeTransform(glm::mat4& transform);
 	void UploadBuffers();
 
 private:

@@ -6,7 +6,7 @@ Camera::Camera(int windowWidth, int windowHeight)
 	UpdateViewMatrix();
 	ResizeProjectionMatrix(windowWidth, windowHeight);
 
-	position = float3(0.0f, 0.0f, 25.0f);
+	position = glm::vec3(0.0f, 0.0f, 25.0f);
 }
 
 void Camera::Update(float deltaTime)
@@ -23,7 +23,7 @@ void Camera::Update(float deltaTime)
 		movement /= speedMultiplier;
 	}
 
-	int right = Input::GetKey(KeyCode::A) - Input::GetKey(KeyCode::D);
+	int right = Input::GetKey(KeyCode::D) - Input::GetKey(KeyCode::A);
 	int up = Input::GetKey(KeyCode::E) - Input::GetKey(KeyCode::Q);
 	int forward = Input::GetKey(KeyCode::S) - Input::GetKey(KeyCode::W);
 
@@ -36,30 +36,31 @@ void Camera::Update(float deltaTime)
 
 void Camera::UpdateViewMatrix()
 {
-	// Hardcoded for now, replace with input vars... 
-	const XMVECTOR eyePosition = XMVectorSet(position.x, position.y, position.z, 1);
-	const XMVECTOR focusPoint = XMVector4Normalize(XMVectorSet(position.x, position.y, position.z + 1, 1));
-	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
-	view = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
+	// Placeholder until we've a look around
+	const glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
+	const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+	view = glm::lookAt(position, position + front, up);
 }
 
 void Camera::ResizeProjectionMatrix(int windowWidth, int windowHeight)
 {
 	aspectRatio = float(windowWidth) / float(windowHeight);
-	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(FOV), aspectRatio, 0.01f, 1000.0f);
+	projection = glm::perspective(glm::radians(FOV), aspectRatio, nearClip, farClip);
 }
 
-matrix Camera::GetViewProjectionMatrix()
+const glm::mat4& Camera::GetViewProjectionMatrix()
 {
-	return XMMatrixMultiply(view, projection);
+	viewProjection = projection * view;
+	return viewProjection;
 }
 
-const matrix& Camera::GetViewMatrix()
+const glm::mat4& Camera::GetViewMatrix()
 {
 	return view;
 }
 
-const matrix& Camera::GetProjectionMatrix()
+const glm::mat4& Camera::GetProjectionMatrix()
 {
 	return projection;
 }

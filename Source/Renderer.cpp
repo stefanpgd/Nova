@@ -96,10 +96,9 @@ void Renderer::Render()
 	commandList->RSSetScissorRects(1, &window->GetScissorRect());
 	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
 
-	matrix viewProjection = camera->GetViewProjectionMatrix();
 	for (Model* model : models)
 	{
-		model->Draw(viewProjection);
+		model->Draw(camera->GetViewProjectionMatrix());
 	}
 
 	ID3D12DescriptorHeap* heaps[] = { CSUHeap->GetAddress() };
