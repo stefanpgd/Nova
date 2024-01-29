@@ -14,7 +14,7 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, glm::mat4& tr
 	LoadMaterial(model, primitive);
 	LoadIndices(model, primitive);
 
-	//ApplyNodeTransform(transform);
+	ApplyNodeTransform(transform);
 	UploadBuffers();
 }
 
@@ -137,24 +137,16 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	}
 }
 
-void Mesh::ApplyNodeTransform(glm::mat4& transform)
+void Mesh::ApplyNodeTransform(const glm::mat4& transform)
 {
 	// TODO: Check if it can be optimized or something with GLM, or if vec3s work
 	for (Vertex& vertex : vertices)
 	{
-		glm::vec4 vert = glm::vec4(vertex.Position.x, vertex.Position.y, vertex.Position.z, 0.0f);
-		vert = vert * transform;
-		
-		vertex.Position.x = vert.x;
-		vertex.Position.y = vert.y;
-		vertex.Position.z = vert.z;
+		glm::vec4 vert = glm::vec4(vertex.Position.x, vertex.Position.y, vertex.Position.z, 1.0f);
+		vertex.Position = transform * vert;
 
-		glm::vec4 norm = glm::vec4(vertex.Normal.x, vertex.Normal.y, vertex.Normal.z, 0.0f);
-		norm = norm * transform;
-
-		vertex.Normal.x = norm.x;
-		vertex.Normal.y = norm.y;
-		vertex.Normal.z = norm.z;
+		glm::vec4 norm = glm::vec4(vertex.Normal.x, vertex.Normal.y, vertex.Normal.z, 1.0f);
+		vertex.Normal = transform * norm;
 	}
 }
 

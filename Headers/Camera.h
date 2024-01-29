@@ -21,7 +21,7 @@ private:
 	glm::mat4 projection;
 	glm::mat4 viewProjection; // stored locally for data copying
 
-	float FOV = 60.0f;
+	float FOV = 45.0f;
 	float nearClip = 0.01f;
 	float farClip = 1000.0f;
 	float aspectRatio;

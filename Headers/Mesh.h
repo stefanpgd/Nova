@@ -30,7 +30,7 @@ private:
 	void LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive);
 	void LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive);
 
-	void ApplyNodeTransform(glm::mat4& transform);
+	void ApplyNodeTransform(const glm::mat4& transform);
 	void UploadBuffers();
 
 private:

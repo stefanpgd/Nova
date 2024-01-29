@@ -20,7 +20,7 @@ public:
 
 private:
 	void TraverseRootNodes(tinygltf::Model& model);
-	void TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, glm::mat4& parentMatrix);
+	void TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, const glm::mat4& parentMatrix);
 
 	std::vector<Mesh*> meshes;
 };

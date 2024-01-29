@@ -66,10 +66,15 @@ void Model::TraverseRootNodes(tinygltf::Model& model)
 			std::vector<float> matrix;
 			for(int j = 0; j < 16; j++)
 			{
-				matrix.push_back(rootNode.matrix[j]);
+				matrix.push_back(static_cast<float>(rootNode.matrix[j]));
 			}
 
 			transform = glm::make_mat4(matrix.data());
+		}
+		else
+		{
+			// Identity Matrix //
+			transform = glm::mat4(1.0f);
 		}
 
 		if(rootNode.mesh != -1)
@@ -90,7 +95,7 @@ void Model::TraverseRootNodes(tinygltf::Model& model)
 	}
 }
 
-void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, glm::mat4& parentMatrix)
+void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, const glm::mat4& parentTransform)
 {
 	glm::mat4 transform;
 
@@ -100,13 +105,18 @@ void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, glm
 		std::vector<float> matrix;
 		for(int i = 0; i < 16; i++)
 		{
-			matrix.push_back(node.matrix[i]);
+			matrix.push_back(static_cast<float>(node.matrix[i]));
 		}
 
 		transform = glm::make_mat4(matrix.data());
 	}
+	else
+	{
+		// Identity Matrix //
+		transform = glm::mat4(1.0f); 
+	}
 
-	transform = parentMatrix * transform;
+	glm::mat4 childNodeTransform = parentTransform * transform;
 
 	// 2. Apply to meshes in note //
 	if(node.mesh != -1)
@@ -115,13 +125,13 @@ void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, glm
 
 		for(tinygltf::Primitive& primitive : mesh.primitives)
 		{
-			meshes.push_back(new Mesh(model, primitive, transform));
+			meshes.push_back(new Mesh(model, primitive, childNodeTransform));
 		}
 	}
 
 	// 3. Loop for children // 
 	for(int noteID : node.children)
 	{
-		TraverseChildNodes(model, model.nodes[noteID], transform);
+		TraverseChildNodes(model, model.nodes[noteID], childNodeTransform);
 	}
 }
