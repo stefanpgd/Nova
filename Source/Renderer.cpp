@@ -19,7 +19,6 @@
 #include <imgui_impl_win32.h>
 #include <imgui_impl_dx12.h>
 
-// TODO: Add depth stencil resize function and call it during actual resize...
 namespace RendererInternal
 {
 	Window* window = nullptr;
