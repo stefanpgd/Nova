@@ -11,6 +11,8 @@ Model::Model(const std::string& filePath)
 	std::string error;
 	std::string warning;
 
+	Name = filePath.substr(filePath.find_last_of("\\") + 1);
+
 	// Tiny glTF provides us with a model
 	// the model structure contains EVERYTHING already neatly prepared in vectors.
 	bool result = loader.LoadASCIIFromFile(&model, &error, &warning, filePath);

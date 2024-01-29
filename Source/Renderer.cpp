@@ -53,10 +53,11 @@ Renderer::Renderer(const std::wstring& applicationName)
 	InitializeImGui();
 
 	// Pipeline & Test Meshes // 
-	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
 	rootParameters[0].InitAsConstants(32, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	rootParameters[1].InitAsConstants(3, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
-	rootSignature = new DXRootSignature(rootParameters, 1, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	rootSignature = new DXRootSignature(rootParameters, 2, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
 }
 
@@ -95,6 +96,8 @@ void Renderer::Render()
 	commandList->RSSetViewports(1, &window->GetViewport());
 	commandList->RSSetScissorRects(1, &window->GetScissorRect());
 	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
+
+	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->GetForwardVector(), 0);
 
 	for (Model* model : models)
 	{

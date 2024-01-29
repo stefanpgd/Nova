@@ -20,6 +20,9 @@ private:
 	void ModelSelectionWindow();
 	void StatisticsWindow();
 
+	// TODO: Replace with selection window 
+	void TransformWindow();
+
 	void LoadModelFilePaths(std::string path, std::string originalPath);
 	void ImGuiStyleSettings();
 

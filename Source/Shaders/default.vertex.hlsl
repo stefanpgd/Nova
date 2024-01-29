@@ -5,6 +5,12 @@ struct TransformData
 };
 ConstantBuffer<TransformData> Transform : register(b0);
  
+struct SceneInfo
+{
+    float3 viewDirection;
+};
+ConstantBuffer<SceneInfo> Scene : register(b1);
+
 struct VertexPosColor
 {
     float3 Position : POSITION;
@@ -16,6 +22,7 @@ struct VertexShaderOutput
 {
 	float3 Color : Color;
     float3 Normal : Normal;
+    float3 ViewDirection : View;
 	float4 Position : SV_Position;
 };
  
@@ -27,6 +34,7 @@ VertexShaderOutput main(VertexPosColor IN)
 	OUT.Position = mul(Transform.MVP, float4(IN.Position, 1.0f));
     OUT.Normal = normalize(mul(Transform.Model, float4(IN.Normal, 0.0f)).xyz);
     OUT.Color = IN.Color;
+    OUT.ViewDirection = Scene.viewDirection;
  
 	return OUT;
 }

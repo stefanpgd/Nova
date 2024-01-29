@@ -1,6 +1,7 @@
 #include "Editor.h"
 #include "Renderer.h"
 #include "Logger.h"
+#include "Model.h"
 
 #include <imgui.h>
 #include <filesystem>
@@ -8,7 +9,6 @@
 Editor::Editor(Renderer* renderer) : renderer(renderer)
 {
 	ImGuiStyleSettings();
-
 	LoadModelFilePaths("Assets/Models/", "Assets/Models/");
 
 	std::string modelCount = std::to_string(modelFilePaths.size());
@@ -21,6 +21,7 @@ void Editor::Update(float deltaTime)
 
 	ModelSelectionWindow();
 	StatisticsWindow();
+	TransformWindow();
 }
 
 void Editor::ModelSelectionWindow()
@@ -61,6 +62,26 @@ void Editor::StatisticsWindow()
 	ImGui::SeparatorText("Stats");
 
 	ImGui::Text("FPS: %i", int(1.0f / deltaTime));
+	ImGui::End();
+}
+
+void Editor::TransformWindow()
+{
+	ImGui::Begin("Transforms");
+
+	for(int i = 0; i < renderer->models.size(); i++)
+	{
+		Model* model = renderer->models[i];
+
+		ImGui::SeparatorText(model->Name.c_str());
+
+		ImGui::PushID(i);
+		ImGui::DragFloat3("Position:", &model->Transform.Position[0], 0.05f);
+		ImGui::DragFloat3("Rotation:", &model->Transform.Rotation[0], 0.05f);
+		ImGui::DragFloat3("Scale:", &model->Transform.Scale[0], 0.01f, 0.0f, 10000.0f);
+		ImGui::PopID();
+	}
+
 	ImGui::End();
 }
 

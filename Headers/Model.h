@@ -17,6 +17,7 @@ public:
 
 public:
 	Transform Transform;
+	std::string Name;
 
 private:
 	void TraverseRootNodes(tinygltf::Model& model);

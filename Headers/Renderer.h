@@ -38,4 +38,6 @@ private:
 	float elaspedTime = 0.0f;
 	unsigned int width = 1080;
 	unsigned int height = 720;
+
+	friend class Editor;
 };
