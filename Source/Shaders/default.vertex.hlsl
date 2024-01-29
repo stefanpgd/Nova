@@ -1,6 +1,7 @@
 struct TransformData
 {
 	matrix MVP;
+	matrix Model;
 };
 ConstantBuffer<TransformData> Transform : register(b0);
  
@@ -24,7 +25,7 @@ VertexShaderOutput main(VertexPosColor IN)
  
 	// TODO: Use Model instead of MVP for Normal transformation
 	OUT.Position = mul(Transform.MVP, float4(IN.Position, 1.0f));
-    OUT.Normal = normalize(mul(Transform.MVP, float4(IN.Normal, 0.0f)).xyz);
+    OUT.Normal = normalize(mul(Transform.Model, float4(IN.Normal, 0.0f)).xyz);
     OUT.Color = IN.Color;
  
 	return OUT;

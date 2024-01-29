@@ -16,5 +16,5 @@ float4 main(PixelIN IN) : SV_TARGET
     
     float3 output = min(ambient + diffuse, float3(1.0, 1.0, 1.0));
     
-    return float4(output, 1.0f);
+    return float4(normalC, 1.0f);
 }

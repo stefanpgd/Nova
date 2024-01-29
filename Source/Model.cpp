@@ -39,7 +39,9 @@ void Model::Draw(const glm::mat4& viewProjection)
 		DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetGraphicsCommandList();
 
 	glm::mat4 MVP = viewProjection * Transform.GetModelMatrix();
+
 	commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
+	commandList->SetGraphicsRoot32BitConstants(0, 16, &Transform.GetModelMatrix(), 16);
 
 	for(Mesh* mesh : meshes)
 	{

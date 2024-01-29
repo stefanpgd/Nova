@@ -145,8 +145,8 @@ void Mesh::ApplyNodeTransform(const glm::mat4& transform)
 		glm::vec4 vert = glm::vec4(vertex.Position.x, vertex.Position.y, vertex.Position.z, 1.0f);
 		vertex.Position = transform * vert;
 
-		glm::vec4 norm = glm::vec4(vertex.Normal.x, vertex.Normal.y, vertex.Normal.z, 1.0f);
-		vertex.Normal = transform * norm;
+		glm::vec4 norm = glm::vec4(vertex.Normal.x, vertex.Normal.y, vertex.Normal.z, 0.0f);
+		vertex.Normal = glm::normalize(transform * norm);
 	}
 }
 
