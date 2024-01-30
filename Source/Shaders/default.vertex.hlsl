@@ -7,7 +7,7 @@ ConstantBuffer<TransformData> Transform : register(b0);
  
 struct SceneInfo
 {
-    float3 viewDirection;
+    float3 CameraPosition;
 };
 ConstantBuffer<SceneInfo> Scene : register(b1);
 
@@ -23,6 +23,7 @@ struct VertexShaderOutput
 	float3 Color : Color;
     float3 Normal : Normal;
     float3 FragPosition : FragPosition;
+    float3 CameraPosition : CameraPosition;
 	float4 Position : SV_Position;
 };
  
@@ -35,6 +36,7 @@ VertexShaderOutput main(VertexPosColor IN)
     OUT.Normal = normalize(mul(Transform.Model, float4(IN.Normal, 0.0f)).xyz);
     OUT.Color = IN.Color;
     OUT.FragPosition = mul(Transform.MVP, float4(IN.Position, 0.0f)).xyz;
- 
+    OUT.CameraPosition = Scene.CameraPosition;
+    
 	return OUT;
 }

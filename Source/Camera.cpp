@@ -6,7 +6,7 @@ Camera::Camera(int windowWidth, int windowHeight)
 	UpdateViewMatrix();
 	ResizeProjectionMatrix(windowWidth, windowHeight);
 
-	position = glm::vec3(0.0f, 0.0f, 10.0f);
+	Position = glm::vec3(0.0f, 0.0f, 10.0f);
 }
 
 void Camera::Update(float deltaTime)
@@ -27,9 +27,9 @@ void Camera::Update(float deltaTime)
 	int up = Input::GetKey(KeyCode::E) - Input::GetKey(KeyCode::Q);
 	int forward = Input::GetKey(KeyCode::S) - Input::GetKey(KeyCode::W);
 
-	position.x += right * movement;
-	position.y += up * movement;
-	position.z += forward * movement;
+	Position.x += right * movement;
+	Position.y += up * movement;
+	Position.z += forward * movement;
 
 	UpdateViewMatrix();
 }
@@ -40,7 +40,7 @@ void Camera::UpdateViewMatrix()
 	const glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
 	const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
-	view = glm::lookAt(position, position + front, up);
+	view = glm::lookAt(Position, Position + front, up);
 }
 
 void Camera::ResizeProjectionMatrix(int windowWidth, int windowHeight)

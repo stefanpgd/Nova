@@ -17,6 +17,9 @@ public:
 	const glm::mat4& GetProjectionMatrix();
 	const glm::mat4& GetViewProjectionMatrix();
 
+public:
+	glm::vec3 Position;
+
 private:
 	glm::mat4 view;
 	glm::mat4 projection;
@@ -31,7 +34,6 @@ private:
 	float farClip = 1000.0f;
 	float aspectRatio;
 
-	glm::vec3 position;
 	float speed = 12.0f;
 	float speedMultiplier = 6.0f;
 };

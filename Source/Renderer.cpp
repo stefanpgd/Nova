@@ -137,7 +137,7 @@ void Renderer::Render()
 	commandList->RSSetScissorRects(1, &window->GetScissorRect());
 	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
 
-	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->GetForwardVector(), 0);
+	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->Position, 0);
 
 	ID3D12DescriptorHeap* heaps[] = { CBVHeap->GetAddress() };
 	commandList->SetDescriptorHeaps(1, heaps);
