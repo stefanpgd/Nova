@@ -27,11 +27,52 @@ namespace RendererInternal
 	DXCommands* directCommands = nullptr;
 	DXCommands* copyCommands = nullptr;
 
-	DXDescriptorHeap* CSUHeap = nullptr;
+	DXDescriptorHeap* CBVHeap = nullptr;
 	DXDescriptorHeap* DSVHeap = nullptr;
 	DXDescriptorHeap* RTVHeap = nullptr;
 }
 using namespace RendererInternal;
+
+unsigned int lightCBVIndex = 0;
+ComPtr<ID3D12Resource> lightBuffer;
+
+struct LightData
+{
+	glm::vec3 lightDirection;
+	float stub[61];
+};
+LightData data;
+
+void UpdateLightBuffer()
+{
+	lightCBVIndex = CBVHeap->GetNextAvailableIndex();
+
+	// Placeholder //
+	data.lightDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+
+	// Using direct since the lights might be used in-flight //
+	DXCommands* directCommands = DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_COPY);
+	ComPtr<ID3D12GraphicsCommandList2> commandList = directCommands->GetGraphicsCommandList();
+
+	directCommands->Flush();
+	directCommands->ResetCommandList(DXAccess::GetCurrentBackBufferIndex());
+
+	ComPtr<ID3D12Resource> lightIntermediate;
+	UpdateBufferResource(commandList, &lightBuffer, &lightIntermediate, 1, sizeof(LightData), &data, D3D12_RESOURCE_FLAG_NONE);
+
+	directCommands->ExecuteCommandList(DXAccess::GetCurrentBackBufferIndex());
+	directCommands->Signal();
+	directCommands->WaitForFenceValue();
+
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
+	desc.BufferLocation = lightBuffer->GetGPUVirtualAddress();
+	desc.SizeInBytes = sizeof(LightData);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE handle = CBVHeap->GetCPUHandleAt(lightCBVIndex);
+	device->CreateConstantBufferView(&desc, handle);
+}
 
 Renderer::Renderer(const std::wstring& applicationName)
 {
@@ -40,7 +81,7 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	device = new DXDevice();
 
-	CSUHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1000, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	CBVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1000, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	DSVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 5);
 	RTVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 3);
 
@@ -52,13 +93,19 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	InitializeImGui();
 
-	// Pipeline & Test Meshes // 
-	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
-	rootParameters[0].InitAsConstants(32, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-	rootParameters[1].InitAsConstants(3, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	// Pipeline // 
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRanges[1];
+	descriptorRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 1); // Lighting buffer
 
-	rootSignature = new DXRootSignature(rootParameters, 2, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_PARAMETER1 rootParameters[3];
+	rootParameters[0].InitAsConstants(32, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); // MVP & Model
+	rootParameters[1].InitAsConstants(3, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX); // Scene info ( Camera... etc. ) 
+	rootParameters[2].InitAsDescriptorTable(1, &descriptorRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Lighting data
+
+	rootSignature = new DXRootSignature(rootParameters, 3, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
+
+	UpdateLightBuffer();
 }
 
 void Renderer::Update(float deltaTime)
@@ -99,14 +146,17 @@ void Renderer::Render()
 
 	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->GetForwardVector(), 0);
 
+	ID3D12DescriptorHeap* heaps[] = { CBVHeap->GetAddress() };
+	commandList->SetDescriptorHeaps(1, heaps);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle = CBVHeap->GetGPUHandleAt(lightCBVIndex);
+	commandList->SetGraphicsRootDescriptorTable(2, gpuHandle);
+
 	for (Model* model : models)
 	{
 		model->Draw(camera->GetViewProjectionMatrix());
 	}
 
-	ID3D12DescriptorHeap* heaps[] = { CSUHeap->GetAddress() };
-
-	commandList->SetDescriptorHeaps(1, heaps);
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 
 	// 3. Transition to a Present state, then execute the commands and present the next back buffer //
@@ -141,9 +191,9 @@ void Renderer::InitializeImGui()
 	ImGui::StyleColorsDark();
 	ImGui_ImplWin32_Init(window->GetHWND());
 
-	const unsigned int cbvIndex = CSUHeap->GetNextAvailableIndex();
+	const unsigned int cbvIndex = CBVHeap->GetNextAvailableIndex();
 	ImGui_ImplDX12_Init(device->GetAddress(), Window::BackBufferCount, DXGI_FORMAT_R8G8B8A8_UNORM,
-		CSUHeap->GetAddress(), CSUHeap->GetCPUHandleAt(cbvIndex), CSUHeap->GetGPUHandleAt(cbvIndex));
+		CBVHeap->GetAddress(), CBVHeap->GetCPUHandleAt(cbvIndex), CBVHeap->GetGPUHandleAt(cbvIndex));
 }
 
 #pragma region DXAccess Implementations
@@ -194,7 +244,7 @@ DXDescriptorHeap* DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type)
 	switch(type)
 	{
 	case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
-		return CSUHeap;
+		return CBVHeap;
 		break;
 
 	case D3D12_DESCRIPTOR_HEAP_TYPE_DSV:
