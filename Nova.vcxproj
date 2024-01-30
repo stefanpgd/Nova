@@ -195,6 +195,7 @@
     <ClInclude Include="Headers\DXCommands.h" />
     <ClInclude Include="Headers\Engine.h" />
     <ClInclude Include="Headers\DXUtilities.h" />
+    <ClInclude Include="Headers\Lights.h" />
     <ClInclude Include="Headers\Logger.h" />
     <ClInclude Include="Headers\Renderer.h" />
     <ClInclude Include="Headers\Window.h" />

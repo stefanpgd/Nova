@@ -34,26 +34,6 @@ namespace RendererInternal
 }
 using namespace RendererInternal;
 
-int lightCBVIndex = -1;
-ComPtr<ID3D12Resource> lightBuffer;
-
-struct LightData
-{
-	glm::vec3 lightDirection = glm::vec3(0.0f, -1.0f, 0.0f);;
-	float stub[61];
-};
-LightData data;
-
-void UpdateLightBuffer()
-{
-	if(lightCBVIndex < 0)
-	{
-		lightCBVIndex = CBVHeap->GetNextAvailableIndex();
-	}
-
-	UpdateInFlightCBV(lightBuffer.Get(), lightCBVIndex, 1, sizeof(LightData), &data);
-}
-
 Renderer::Renderer(const std::wstring& applicationName)
 {
 	// Initialization for all vital components for rendering //
@@ -95,16 +75,22 @@ void Renderer::Update(float deltaTime)
 	camera->Update(deltaTime);
 
 	ImGui::Begin("Lights");
-	if(ImGui::DragFloat3("Light Direction", &data.lightDirection[0], 0.01f, -1.0f, 1.0f))
+
+	if(ImGui::ColorEdit3("Light Color - 1", &lights.pointLights[0].Color[0]))
 	{
 		UpdateLightBuffer();
 	}
 
-	if(ImGui::Button("Normalize Data"))
+	if(ImGui::ColorEdit3("Light Color - 2", &lights.pointLights[1].Color[0]))
 	{
-		data.lightDirection = glm::normalize(data.lightDirection);
 		UpdateLightBuffer();
 	}
+
+	if(ImGui::SliderInt("use Color", &lights.activePointLights, 0, 1))
+	{
+		UpdateLightBuffer();
+	}
+
 	ImGui::End();
 }
 
@@ -187,6 +173,16 @@ void Renderer::InitializeImGui()
 	const unsigned int cbvIndex = CBVHeap->GetNextAvailableIndex();
 	ImGui_ImplDX12_Init(device->GetAddress(), Window::BackBufferCount, DXGI_FORMAT_R8G8B8A8_UNORM,
 		CBVHeap->GetAddress(), CBVHeap->GetCPUHandleAt(cbvIndex), CBVHeap->GetGPUHandleAt(cbvIndex));
+}
+
+void Renderer::UpdateLightBuffer()
+{
+	if(lightCBVIndex < 0)
+	{
+		lightCBVIndex = CBVHeap->GetNextAvailableIndex();
+	}
+
+	UpdateInFlightCBV(lightBuffer.Get(), lightCBVIndex, 1, sizeof(LightData), &lights);
 }
 
 #pragma region DXAccess Implementations
