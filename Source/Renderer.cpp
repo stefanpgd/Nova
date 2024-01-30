@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include "Logger.h"
 
 // DirectX Components //
 #include "DXAccess.h"
@@ -33,28 +34,28 @@ namespace RendererInternal
 }
 using namespace RendererInternal;
 
-unsigned int lightCBVIndex = 0;
+int lightCBVIndex = -1;
 ComPtr<ID3D12Resource> lightBuffer;
 
 struct LightData
 {
-	glm::vec3 lightDirection;
+	glm::vec3 lightDirection = glm::vec3(0.0f, 1.0f, 0.0f);;
 	float stub[61];
 };
 LightData data;
 
 void UpdateLightBuffer()
 {
-	lightCBVIndex = CBVHeap->GetNextAvailableIndex();
+	if(lightCBVIndex < 0)
+	{
+		lightCBVIndex = CBVHeap->GetNextAvailableIndex();
+	}
 
-	// Placeholder //
-	data.lightDirection = glm::vec3(0.0f, 1.0f, 0.0f);
-
-	// Using direct since the lights might be used in-flight //
-	DXCommands* directCommands = DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_COPY);
-	ComPtr<ID3D12GraphicsCommandList2> commandList = directCommands->GetGraphicsCommandList();
-
+	// Using direct to ensure the lights aren't in-flight //
+	DXCommands* directCommands = DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT);
 	directCommands->Flush();
+
+	ComPtr<ID3D12GraphicsCommandList2> commandList = directCommands->GetGraphicsCommandList();
 	directCommands->ResetCommandList(DXAccess::GetCurrentBackBufferIndex());
 
 	ComPtr<ID3D12Resource> lightIntermediate;
@@ -62,7 +63,7 @@ void UpdateLightBuffer()
 
 	directCommands->ExecuteCommandList(DXAccess::GetCurrentBackBufferIndex());
 	directCommands->Signal();
-	directCommands->WaitForFenceValue();
+	directCommands->WaitForFenceValue(DXAccess::GetCurrentBackBufferIndex());
 
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 
@@ -113,6 +114,19 @@ void Renderer::Update(float deltaTime)
 	elaspedTime += deltaTime;
 
 	camera->Update(deltaTime);
+
+	ImGui::Begin("Lights");
+	if(ImGui::DragFloat3("Light Direction", &data.lightDirection[0], 0.01f, -1.0f, 1.0f))
+	{
+		UpdateLightBuffer();
+	}
+
+	if(ImGui::Button("Normalize Data"))
+	{
+		data.lightDirection = glm::normalize(data.lightDirection);
+		UpdateLightBuffer();
+	}
+	ImGui::End();
 }
 
 void Renderer::Render()
