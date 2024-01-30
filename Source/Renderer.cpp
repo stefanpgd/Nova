@@ -39,7 +39,7 @@ ComPtr<ID3D12Resource> lightBuffer;
 
 struct LightData
 {
-	glm::vec3 lightDirection = glm::vec3(0.0f, 1.0f, 0.0f);;
+	glm::vec3 lightDirection = glm::vec3(0.0f, -1.0f, 0.0f);;
 	float stub[61];
 };
 LightData data;
@@ -51,28 +51,7 @@ void UpdateLightBuffer()
 		lightCBVIndex = CBVHeap->GetNextAvailableIndex();
 	}
 
-	// Using direct to ensure the lights aren't in-flight //
-	DXCommands* directCommands = DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT);
-	directCommands->Flush();
-
-	ComPtr<ID3D12GraphicsCommandList2> commandList = directCommands->GetGraphicsCommandList();
-	directCommands->ResetCommandList(DXAccess::GetCurrentBackBufferIndex());
-
-	ComPtr<ID3D12Resource> lightIntermediate;
-	UpdateBufferResource(commandList, &lightBuffer, &lightIntermediate, 1, sizeof(LightData), &data, D3D12_RESOURCE_FLAG_NONE);
-
-	directCommands->ExecuteCommandList(DXAccess::GetCurrentBackBufferIndex());
-	directCommands->Signal();
-	directCommands->WaitForFenceValue(DXAccess::GetCurrentBackBufferIndex());
-
-	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
-
-	D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
-	desc.BufferLocation = lightBuffer->GetGPUVirtualAddress();
-	desc.SizeInBytes = sizeof(LightData);
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE handle = CBVHeap->GetCPUHandleAt(lightCBVIndex);
-	device->CreateConstantBufferView(&desc, handle);
+	UpdateInFlightCBV(lightBuffer.Get(), lightCBVIndex, 1, sizeof(LightData), &data);
 }
 
 Renderer::Renderer(const std::wstring& applicationName)

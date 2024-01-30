@@ -10,8 +10,10 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
+#include "Logger.h"
 #include "DXAccess.h"
 #include "DXCommands.h"
+#include "DXDescriptorHeap.h"
 
 inline void ThrowIfFailed(HRESULT hr)
 {
@@ -43,8 +45,8 @@ inline void UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> commandList,
 {
 	if(!bufferData)
 	{
-		assert(false && "Buffer data is NOT valid!");
-		return;
+		LOG(Log::MessageType::Error, "Buffer data is NOT valid!");
+		assert(false);
 	}
 
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
@@ -70,4 +72,45 @@ inline void UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> commandList,
 	subresourceData.SlicePitch = subresourceData.RowPitch;
 
 	UpdateSubresources(commandList.Get(), *destinationResource, *intermediateResource, 0, 0, 1, &subresourceData);
+}
+
+// Ensures that the direct queue is paused so that a resource and its data can be updated 
+inline void UpdateInFlightCBV(ID3D12Resource* destinationResource, unsigned int CBVIndex, unsigned int numberOfElements, 
+	unsigned int elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE)
+{
+	if(!bufferData)
+	{
+		LOG(Log::MessageType::Error, "Buffer data is NOT valid!");
+		assert(false);
+	}
+
+	unsigned int bufferSize = numberOfElements * elementSize;
+	if(bufferSize % 256 != 0)
+	{
+		LOG(Log::MessageType::Error, "Buffer data is NOT 256-byte aligned!");
+		assert(false);
+	}
+
+	// Using direct to ensure the lights aren't in-flight //
+	DXCommands* directCommands = DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT);
+	directCommands->Flush();
+
+	ComPtr<ID3D12GraphicsCommandList2> commandList = directCommands->GetGraphicsCommandList();
+	directCommands->ResetCommandList(DXAccess::GetCurrentBackBufferIndex());
+
+	ComPtr<ID3D12Resource> intermediateResource;
+	UpdateBufferResource(commandList, &destinationResource, &intermediateResource, numberOfElements, elementSize, bufferData, flags);
+
+	directCommands->ExecuteCommandList(DXAccess::GetCurrentBackBufferIndex());
+	directCommands->Signal();
+	directCommands->WaitForFenceValue(DXAccess::GetCurrentBackBufferIndex());
+
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
+	desc.BufferLocation = destinationResource->GetGPUVirtualAddress();
+	desc.SizeInBytes = bufferSize;
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE handle = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)->GetCPUHandleAt(CBVIndex);
+	device->CreateConstantBufferView(&desc, handle);
 }
