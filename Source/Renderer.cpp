@@ -76,19 +76,33 @@ void Renderer::Update(float deltaTime)
 
 	ImGui::Begin("Lights");
 
-	if(ImGui::ColorEdit3("Light Color - 1", &lights.pointLights[0].Color[0]))
+	if(ImGui::Button("Add Light"))
 	{
-		UpdateLightBuffer();
+		if(lights.activePointLights < MAX_AMOUNT_OF_LIGHTS)
+		{
+			lights.activePointLights++;
+			UpdateLightBuffer();
+		}
+		else
+		{
+			LOG(Log::MessageType::Debug, "You are already at the limit of lights")
+		}
 	}
 
-	if(ImGui::ColorEdit3("Light Color - 2", &lights.pointLights[1].Color[0]))
+	for(int i = 0; i < lights.activePointLights; i++)
 	{
-		UpdateLightBuffer();
-	}
+		ImGui::PushID(i);
 
-	if(ImGui::SliderInt("use Color", &lights.activePointLights, 0, 1))
-	{
-		UpdateLightBuffer();
+		PointLight& pointLight = lights.pointLights[i];
+
+		std::string name = "Light - " + std::to_string(i);
+		ImGui::SeparatorText(name.c_str());
+
+		if(ImGui::DragFloat3("Position", &pointLight.Position[0], 0.01f)) { UpdateLightBuffer(); }
+		if(ImGui::ColorEdit3("Color", &pointLight.Color[0])) { UpdateLightBuffer(); }
+		if(ImGui::DragFloat("Intensity", &pointLight.Intensity, 0.05f, 0.0f, 1000.0f)) { UpdateLightBuffer(); }
+
+		ImGui::PopID();
 	}
 
 	ImGui::End();

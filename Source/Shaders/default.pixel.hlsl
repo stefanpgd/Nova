@@ -2,7 +2,7 @@ struct PixelIN
 {
     float3 Color : Color;
     float3 Normal : Normal;
-    float3 ViewDirection : View;
+    float3 FragPosition : FragPosition;
 };
 
 struct PointLight
@@ -16,24 +16,21 @@ struct LightData
 {
     PointLight pointLights[15];
     int activePointLights;
-    float3 stub;
 };
 ConstantBuffer<LightData> lightData : register(b0, space1);
 
 float4 main(PixelIN IN) : SV_TARGET
 {
-    float3 normalC = (IN.Normal + float3(1.0, 1.0, 1.0)) * 0.5;
+    float3 total = float3(0.0f, 0.0f, 0.0f);
     
-    float3 lightDir = normalize(float3(0.0f, -1.0f, 0.0f));
-    float diff = max(dot(IN.Normal, -IN.ViewDirection), 0.0);
+    for (int i = 0; i < lightData.activePointLights; i++)
+    {
+        float3 FragToLight = lightData.pointLights[i].Position - IN.FragPosition;
+        float diff = dot(IN.Normal, normalize(FragToLight));
+        float3 diffuse = diff * IN.Color * float3(lightData.pointLights[i].Color.rgb);
+        
+        total += diffuse;
+    }
     
-    float3 ambient = IN.Color * 0.4f;
-    float3 diffuse = IN.Color * diff;
-    
-    float3 output = max(min(ambient + diffuse, float3(1.0, 1.0, 1.0)), float3(0.0f, 0.0f, 0.0f));
-    
-    int index = lightData.activePointLights;
-    output = float3(lightData.pointLights[index].Color.rgb);
-    
-    return float4(float3(output), 1.0f);
+    return float4(total, 1.0f);
 }

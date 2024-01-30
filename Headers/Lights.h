@@ -1,13 +1,14 @@
 #pragma once
 #include <glm.hpp>
 
-// Memory aligned lighting structs // 
+const int MAX_AMOUNT_OF_LIGHTS = 15;
 
+// Memory aligned lighting structs // 
 struct PointLight
 {
-	glm::vec3 Position;		// 00 - 12 //
-	float Intensity = 1.0f; // 12 - 16 //
-	glm::vec4 Color;		// 16 - 32 //
+	glm::vec3 Position = glm::vec3(0.0f);	// 00 - 12 //
+	float Intensity = 10.0f;				// 12 - 16 //
+	glm::vec4 Color = glm::vec4(1.0f);		// 16 - 32 //
 };
 
 struct LightData
