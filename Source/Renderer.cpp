@@ -110,14 +110,15 @@ void Renderer::Update(float deltaTime)
 
 void Renderer::Render()
 {
-	float aspectRatio = float(width) / float(height);
-
-	// Grab all relevant objects for the draw call //
+	// 0. Grab all relevant objects for the draw call //
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
 	ComPtr<ID3D12GraphicsCommandList2> commandList = directCommands->GetGraphicsCommandList();
+	ID3D12DescriptorHeap* heaps[] = { CBVHeap->GetAddress() };
+
 	CD3DX12_CPU_DESCRIPTOR_HANDLE renderTarget = window->GetCurrentBackBufferRTV();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = DSVHeap->GetCPUHandleAt(0);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE lightData = CBVHeap->GetGPUHandleAt(lightCBVIndex);
 
 	// 1. Reset Command Allocator & List, afterwards prepare Render Target //
 	directCommands->ResetCommandList(backBufferIndex);
@@ -128,36 +129,35 @@ void Renderer::Render()
 	commandList->ClearRenderTargetView(renderTarget, clearColor, 0, nullptr);
 	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	// NEW: Set Pipeline & Root //
-	commandList->SetPipelineState(pipeline->GetAddress());
+	// 3. Setup Information for the Pipeline //
+	commandList->SetDescriptorHeaps(1, heaps);
 	commandList->SetGraphicsRootSignature(rootSignature->GetAddress());
+	commandList->SetPipelineState(pipeline->GetAddress());
+
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->RSSetViewports(1, &window->GetViewport());
 	commandList->RSSetScissorRects(1, &window->GetScissorRect());
 	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
 
+	// 4. Set the root arguments // 
 	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->Position, 0);
+	commandList->SetGraphicsRootDescriptorTable(2, lightData);
 
-	ID3D12DescriptorHeap* heaps[] = { CBVHeap->GetAddress() };
-	commandList->SetDescriptorHeaps(1, heaps);
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle = CBVHeap->GetGPUHandleAt(lightCBVIndex);
-	commandList->SetGraphicsRootDescriptorTable(2, gpuHandle);
-
+	// 5. Draw Calls & Bind MVPs ( happens in Model.cpp ) // 
 	for (Model* model : models)
 	{
 		model->Draw(camera->GetViewProjectionMatrix());
 	}
 
+	// 6. Apply draw data from UI / ImGui //
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 
-	// 3. Transition to a Present state, then execute the commands and present the next back buffer //
+	// 7. Transition to a Present state, then execute the commands and present the next back buffer //
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	directCommands->ExecuteCommandList(backBufferIndex);
 	window->Present();
 
-	// 4. Before we go to the next cycle, we gotta make sure that back buffer is available for use //
+	// 8. Before we go to the next cycle, we gotta make sure that back buffer is available for use //
 	directCommands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
 }
 

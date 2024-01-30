@@ -61,9 +61,10 @@ void DXCommands::Flush()
 {
 	Signal();
 
-	for(int i = 0; i < commandAllocatorCount; i++)
+	if(fence->GetCompletedValue() < fenceValue)
 	{
-		WaitForFenceValue(i);
+		ThrowIfFailed(fence->SetEventOnCompletion(fenceValue, fenceEvent));
+		WaitForSingleObject(fenceEvent, static_cast<DWORD>(std::chrono::milliseconds::max().count()));
 	}
 }
 
