@@ -1,5 +1,5 @@
-#include "DXDevice.h"
-#include "DXUtilities.h"
+#include "Graphics/DXDevice.h"
+#include "Graphics/DXUtilities.h"
 
 #include <dxgi1_6.h>
 

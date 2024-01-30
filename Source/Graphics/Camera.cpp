@@ -1,5 +1,5 @@
-#include "Camera.h"
-#include "Input.h"
+#include "Graphics/Camera.h"
+#include "Framework/Input.h"
 
 Camera::Camera(int windowWidth, int windowHeight)
 {

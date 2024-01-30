@@ -1,19 +1,19 @@
-#include "Renderer.h"
-#include "Logger.h"
+#include "Framework/Renderer.h"
+#include "Utilities/Logger.h"
 
 // DirectX Components //
-#include "DXAccess.h"
-#include "DXDevice.h"
-#include "DXCommands.h"
-#include "DXUtilities.h"
-#include "DXDescriptorHeap.h"
-#include "DXRootSignature.h"
-#include "DXPipeline.h"
+#include "Graphics/DXAccess.h"
+#include "Graphics/DXDevice.h"
+#include "Graphics/DXCommands.h"
+#include "Graphics/DXUtilities.h"
+#include "Graphics/DXDescriptorHeap.h"
+#include "Graphics/DXRootSignature.h"
+#include "Graphics/DXPipeline.h"
 
 // Renderer Components //
-#include "Window.h"
-#include "Model.h"
-#include "Camera.h"
+#include "Graphics/Window.h"
+#include "Graphics/Model.h"
+#include "Graphics/Camera.h"
 
 #include <cassert>
 #include <imgui.h>
@@ -157,7 +157,7 @@ void Renderer::Render()
 	directCommands->ExecuteCommandList(backBufferIndex);
 	window->Present();
 
-	// 8. Before we go to the next cycle, we gotta make sure that back buffer is available for use //
+	// 8. Before we go to the next cycle, we gotta make sure that "next" back buffer is available for use //
 	directCommands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
 }
 

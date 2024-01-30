@@ -3,8 +3,8 @@
 #include <vector>
 #include <tiny_gltf.h>
 
-#include "Transform.h"
-#include "DXUtilities.h"
+#include "Graphics/Transform.h"
+#include "Graphics/DXUtilities.h"
 
 class Mesh;
 

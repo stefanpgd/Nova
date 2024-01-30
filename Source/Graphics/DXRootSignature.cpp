@@ -1,7 +1,7 @@
-#include "DXRootSignature.h"
-#include "DXAccess.h"
-#include "DXUtilities.h"
-#include "Logger.h"
+#include "Graphics/DXRootSignature.h"
+#include "Graphics/DXAccess.h"
+#include "Graphics/DXUtilities.h"
+#include "Utilities/Logger.h"
 
 #include <cassert>
 

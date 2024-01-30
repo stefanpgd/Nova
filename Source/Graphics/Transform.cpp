@@ -1,5 +1,5 @@
-#include "Transform.h"
-#include "Mathematics.h"
+#include "Graphics/Transform.h"
+#include "Framework/Mathematics.h"
 
 Transform::Transform()
 {

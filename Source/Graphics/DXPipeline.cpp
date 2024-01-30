@@ -1,12 +1,13 @@
-#include "DXPipeline.h"
+#include "Graphics/DXPipeline.h"
+#include "Graphics/DXUtilities.h"
+#include "Graphics/DXAccess.h"
+#include "Graphics/DXRootSignature.h"
+#include "Utilities/Logger.h"
+
+#include <d3dx12.h>
 #include <d3dcompiler.h>
 #include <cassert>
 
-#include "d3dx12.h"
-#include "DXUtilities.h"
-#include "DXAccess.h"
-#include "DXRootSignature.h"
-#include "Logger.h"
 
 DXPipeline::DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootSignature)
 {

@@ -1,8 +1,8 @@
-#include "Window.h"
-#include "DXUtilities.h"
-#include "DXAccess.h"
-#include "DXDescriptorHeap.h"
-#include "DXCommands.h"
+#include "Graphics/Window.h"
+#include "Graphics/DXUtilities.h"
+#include "Graphics/DXAccess.h"
+#include "Graphics/DXDescriptorHeap.h"
+#include "Graphics/DXCommands.h"
 
 #include <cassert>
 

@@ -1,7 +1,7 @@
-#include "DXCommands.h"
-#include "DXAccess.h"
-#include "DXDevice.h"
-#include "DXUtilities.h"
+#include "Graphics/DXCommands.h"
+#include "Graphics/DXAccess.h"
+#include "Graphics/DXDevice.h"
+#include "Graphics/DXUtilities.h"
 
 #include <cassert>
 #include <chrono>

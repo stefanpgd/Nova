@@ -1,7 +1,7 @@
-#include "Mesh.h"
-#include "DXAccess.h"
+#include "Graphics/Mesh.h"
+#include "Graphics/DXAccess.h"
+#include "Graphics/DXUtilities.h"
 #include <cassert>
-#include "DXUtilities.h"
 
 Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, glm::mat4& transform)
 {

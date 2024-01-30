@@ -10,10 +10,10 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#include "Logger.h"
-#include "DXAccess.h"
-#include "DXCommands.h"
-#include "DXDescriptorHeap.h"
+#include "Utilities/Logger.h"
+#include "Graphics/DXAccess.h"
+#include "Graphics/DXCommands.h"
+#include "Graphics/DXDescriptorHeap.h"
 
 inline void ThrowIfFailed(HRESULT hr)
 {

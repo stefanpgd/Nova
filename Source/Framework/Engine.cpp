@@ -1,8 +1,8 @@
-#include "Engine.h"
-#include "Renderer.h"
-#include "Editor.h"
-#include "Logger.h"
-#include "Input.h"
+#include "Framework/Engine.h"
+#include "Framework/Renderer.h"
+#include "Framework/Editor.h"
+#include "Framework/Input.h"
+#include "Utilities/Logger.h"
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>

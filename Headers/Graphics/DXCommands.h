@@ -1,5 +1,5 @@
 #pragma once
-#include "Window.h"
+#include "Graphics/Window.h"
 
 #include <wrl.h>
 using namespace Microsoft::WRL;

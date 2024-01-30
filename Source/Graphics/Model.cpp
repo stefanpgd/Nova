@@ -1,8 +1,9 @@
-#include "Model.h"
-#include "Mesh.h"
-#include "DXAccess.h"
-#include "Logger.h"
-#include "Mathematics.h"
+#include "Graphics/Model.h"
+#include "Graphics/Mesh.h"
+#include "Graphics/DXAccess.h"
+
+#include "Framework/Mathematics.h"
+#include "Utilities/Logger.h"
 
 Model::Model(const std::string& filePath)
 {

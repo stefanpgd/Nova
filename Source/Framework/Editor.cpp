@@ -1,7 +1,7 @@
-#include "Editor.h"
-#include "Renderer.h"
-#include "Logger.h"
-#include "Model.h"
+#include "Framework/Editor.h"
+#include "Framework/Renderer.h"
+#include "Utilities/Logger.h"
+#include "Graphics/Model.h"
 
 #include <imgui.h>
 #include <filesystem>
