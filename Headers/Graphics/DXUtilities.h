@@ -74,6 +74,27 @@ inline void UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> commandList,
 	UpdateSubresources(commandList.Get(), *destinationResource, *intermediateResource, 0, 0, 1, &subresourceData);
 }
 
+inline void UploadSRVTest(ComPtr<ID3D12GraphicsCommandList2> commandList, ID3D12Resource* destinationResource, ID3D12Resource* intermediateResource, D3D12_SUBRESOURCE_DATA& subresource)
+{
+	// TODO: Read up on this stuff 
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
+	CD3DX12_RESOURCE_BARRIER copyBarrier = CD3DX12_RESOURCE_BARRIER::Transition(destinationResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+	CD3DX12_RESOURCE_BARRIER pixelBarrier = CD3DX12_RESOURCE_BARRIER::Transition(destinationResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+	commandList->ResourceBarrier(1, &copyBarrier);
+	unsigned int size = GetRequiredIntermediateSize(destinationResource, 0, 1);
+
+	D3D12_HEAP_PROPERTIES properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(size);
+
+	// Create resource in upload heap
+	ThrowIfFailed(device->CreateCommittedResource(&properties, D3D12_HEAP_FLAG_NONE,
+		&desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&intermediateResource)));
+
+	UpdateSubresources(commandList.Get(), destinationResource, intermediateResource, 0, 0, 1, &subresource);
+	commandList->ResourceBarrier(1, &pixelBarrier);
+}
+
 // Ensures that the direct queue is paused so that a resource and its data can be updated 
 inline void UpdateInFlightCBV(ID3D12Resource* destinationResource, unsigned int CBVIndex, unsigned int numberOfElements, 
 	unsigned int elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE)

@@ -1,6 +1,7 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/DXAccess.h"
 #include "Graphics/DXUtilities.h"
+#include "Graphics/Texture.h"
 #include <cassert>
 
 Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, glm::mat4& transform)
@@ -135,6 +136,9 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 		vertex.Color.y = material.pbrMetallicRoughness.baseColorFactor[1];
 		vertex.Color.z = material.pbrMetallicRoughness.baseColorFactor[2];
 	}
+
+	int textureID = material.pbrMetallicRoughness.baseColorTexture.index;
+	testTexture = new Texture(model, model.textures[textureID]);
 }
 
 void Mesh::ApplyNodeTransform(const glm::mat4& transform)

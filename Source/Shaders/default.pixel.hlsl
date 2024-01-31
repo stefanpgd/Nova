@@ -20,8 +20,13 @@ struct LightData
 };
 ConstantBuffer<LightData> lightData : register(b0, space1);
 
+Texture2D Diffuse : register(t0);
+SamplerState LinearSampler : register(s0);
+
 float4 main(PixelIN IN) : SV_TARGET
 {
+    float3 albedo = Diffuse.Sample(LinearSampler, IN.Normal.xy).rgb;
+    
     float3 total = float3(0.0f, 0.0f, 0.0f);
     
     for (int i = 0; i < lightData.activePointLights; i++)
@@ -62,5 +67,5 @@ float4 main(PixelIN IN) : SV_TARGET
         total += result;
     }
     
-    return float4(total, 1.0f);
+    return float4(albedo, 1.0f);
 }

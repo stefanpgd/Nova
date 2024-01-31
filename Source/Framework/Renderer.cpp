@@ -54,15 +54,20 @@ Renderer::Renderer(const std::wstring& applicationName)
 	InitializeImGui();
 
 	// Pipeline // 
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRanges[1];
-	descriptorRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 1); // Lighting buffer
+	CD3DX12_DESCRIPTOR_RANGE1 cbvRanges[1]; // placeholder cause there is no guarantee they are next too each other...
+	cbvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 1); // Lighting buffer
 
-	CD3DX12_ROOT_PARAMETER1 rootParameters[3];
+	CD3DX12_DESCRIPTOR_RANGE1 srvRanges[1];
+	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // Lighting buffer
+
+	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
 	rootParameters[0].InitAsConstants(32, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); // MVP & Model
 	rootParameters[1].InitAsConstants(3, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX); // Scene info ( Camera... etc. ) 
-	rootParameters[2].InitAsDescriptorTable(1, &descriptorRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Lighting data
+	rootParameters[2].InitAsDescriptorTable(1, &cbvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Lighting data
+	rootParameters[3].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Lighting data
 
-	rootSignature = new DXRootSignature(rootParameters, 3, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	// TODO: Maybe do a countof or something so you know how many are inside of the rootParameters...
+	rootSignature = new DXRootSignature(rootParameters, 4, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
 
 	UpdateLightBuffer();

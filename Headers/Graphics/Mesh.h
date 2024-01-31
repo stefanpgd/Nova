@@ -16,6 +16,8 @@ struct Vertex
 	glm::vec3 Color;
 };
 
+class Texture;
+
 class Mesh
 {
 public:
@@ -24,6 +26,9 @@ public:
 	const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView();
 	const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView();
 	const unsigned int GetIndicesCount();
+
+	// Placeholder //
+	Texture* testTexture;
 
 private:
 	void LoadAttribute(tinygltf::Model& model, tinygltf::Primitive& primitive, const std::string& attributeType);
@@ -43,4 +48,6 @@ private:
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 	unsigned int indicesCount = 0;
+
+
 };
