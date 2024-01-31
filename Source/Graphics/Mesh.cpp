@@ -11,6 +11,7 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, glm::mat4& tr
 	// to render the model
 	LoadAttribute(model, primitive, "POSITION");
 	LoadAttribute(model, primitive, "NORMAL");
+	LoadAttribute(model, primitive, "TEXCOORD_0");
 
 	LoadMaterial(model, primitive);
 	LoadIndices(model, primitive);
@@ -85,6 +86,10 @@ void Mesh::LoadAttribute(tinygltf::Model& model, tinygltf::Primitive& primitive,
 		else if (attributeType == "NORMAL")
 		{
 			memcpy(&vertex.Normal, &buffer.data[bufferLocation], dataSize);
+		}
+		else if(attributeType == "TEXCOORD_0")
+		{
+			memcpy(&vertex.TexCoord, &buffer.data[bufferLocation], dataSize);
 		}
 	}
 }

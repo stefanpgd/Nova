@@ -4,6 +4,7 @@ struct PixelIN
     float3 Normal : Normal;
     float3 FragPosition : FragPosition;
     float3 CameraPosition : CameraPosition;
+    float2 TexCoord : TexCoord;
 };
 
 struct PointLight
@@ -25,25 +26,27 @@ SamplerState LinearSampler : register(s0);
 
 float4 main(PixelIN IN) : SV_TARGET
 {
-    float3 albedo = Diffuse.Sample(LinearSampler, IN.Normal.xy).rgb;
+    float3 albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
     
     float3 total = float3(0.0f, 0.0f, 0.0f);
     
     for (int i = 0; i < lightData.activePointLights; i++)
     {
+        float3 color = albedo;
+        
         float3 FragToLight = lightData.pointLights[i].Position - IN.FragPosition;
         float3 lightDir = normalize(FragToLight);
         
-        float3 ambient = 0.04f * IN.Color;
+        float3 ambient = 0.04f * color;
         
         float diff = max(dot(IN.Normal, lightDir), 0.0);
-        float3 diffuse = diff * IN.Color * float3(lightData.pointLights[i].Color.rgb);
+        float3 diffuse = diff * color * float3(lightData.pointLights[i].Color.rgb);
         
         float3 specular = float3(0.0, 0.0, 0.0);
         
         if(diff > 0.0)
         {
-            const float shininess = 24.0;
+            const float shininess = 124.0;
             float3 viewDirection = normalize(IN.CameraPosition - IN.FragPosition);
             
             float specularity = max(dot(viewDirection, reflect(-lightDir, IN.Normal)), 0.0);
@@ -67,5 +70,5 @@ float4 main(PixelIN IN) : SV_TARGET
         total += result;
     }
     
-    return float4(albedo, 1.0f);
+    return float4(total, 1.0f);
 }

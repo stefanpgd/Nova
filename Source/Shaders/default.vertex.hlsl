@@ -16,6 +16,7 @@ struct VertexPosColor
     float3 Position : POSITION;
     float3 Normal : NORMAL;
 	float3 Color : COLOR;
+    float2 TexCoord : TEXCOORD;
 };
  
 struct VertexShaderOutput
@@ -24,6 +25,7 @@ struct VertexShaderOutput
     float3 Normal : Normal;
     float3 FragPosition : FragPosition;
     float3 CameraPosition : CameraPosition;
+    float2 TexCoord : TexCoord;
 	float4 Position : SV_Position;
 };
  
@@ -37,6 +39,7 @@ VertexShaderOutput main(VertexPosColor IN)
     OUT.Color = IN.Color;
     OUT.FragPosition = mul(Transform.MVP, float4(IN.Position, 0.0f)).xyz;
     OUT.CameraPosition = Scene.CameraPosition;
+    OUT.TexCoord = IN.TexCoord;
     
 	return OUT;
 }
