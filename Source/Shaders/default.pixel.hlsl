@@ -22,12 +22,29 @@ struct LightData
 ConstantBuffer<LightData> lightData : register(b0, space1);
 
 Texture2D Diffuse : register(t0);
+Texture2D Skydome : register(t1);
 SamplerState LinearSampler : register(s0);
+
+float3 GetSkydomeColor(PixelIN IN)
+{
+    float pi = 3.14159265;
+    
+    float3 incoming = normalize(IN.FragPosition - IN.CameraPosition);
+    float3 sampleRay = IN.Normal;
+    
+    float theta = cos(sampleRay.y);
+    float phi = atan2(sampleRay.z, sampleRay.x) + pi;
+   
+    float3 n = normalize(IN.Normal);
+    float u = atan2(n.x, n.z) / (2.0 * pi) + 0.5;
+    float v = n.y * 0.5 + 0.5;
+    
+    return Skydome.Sample(LinearSampler, float2(u, v)).rgb;
+}
 
 float4 main(PixelIN IN) : SV_TARGET
 {
     float3 albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
-    
     float3 total = float3(0.0f, 0.0f, 0.0f);
     
     for (int i = 0; i < lightData.activePointLights; i++)
@@ -44,7 +61,7 @@ float4 main(PixelIN IN) : SV_TARGET
         
         float3 specular = float3(0.0, 0.0, 0.0);
         
-        if(diff > 0.0)
+        if (diff > 0.0)
         {
             const float shininess = 124.0;
             float3 viewDirection = normalize(IN.CameraPosition - IN.FragPosition);
@@ -52,9 +69,9 @@ float4 main(PixelIN IN) : SV_TARGET
             float specularity = max(dot(viewDirection, reflect(-lightDir, IN.Normal)), 0.0);
             specularity = max(pow(specularity, shininess), 0.0);
             
-            specular = specularity * float3(lightData.pointLights[i].Color.rgb);
+            specular = specularity * GetSkydomeColor(IN);
         }
- 
+    
         float lightDistance = length(lightData.pointLights[i].Position - IN.FragPosition);
         
         const float constantFalloff = 1.0;
@@ -69,6 +86,8 @@ float4 main(PixelIN IN) : SV_TARGET
         
         total += result;
     }
+    
+    total = GetSkydomeColor(IN);
     
     return float4(total, 1.0f);
 }

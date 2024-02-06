@@ -29,6 +29,8 @@ struct VertexShaderOutput
 	float4 Position : SV_Position;
 };
  
+float PI = 3.14159265;
+
 VertexShaderOutput main(VertexPosColor IN)
 {
 	VertexShaderOutput OUT;

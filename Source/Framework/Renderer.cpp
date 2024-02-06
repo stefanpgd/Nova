@@ -14,6 +14,7 @@
 #include "Graphics/Window.h"
 #include "Graphics/Model.h"
 #include "Graphics/Camera.h"
+#include "Graphics/Texture.h"
 
 #include <cassert>
 #include <imgui.h>
@@ -33,6 +34,9 @@ namespace RendererInternal
 	DXDescriptorHeap* RTVHeap = nullptr;
 }
 using namespace RendererInternal;
+
+// TODO: Make own class?
+Texture* skydome;
 
 Renderer::Renderer(const std::wstring& applicationName)
 {
@@ -60,19 +64,26 @@ Renderer::Renderer(const std::wstring& applicationName)
 	CD3DX12_DESCRIPTOR_RANGE1 srvRanges[1];
 	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // Lighting buffer
 
-	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
+	CD3DX12_DESCRIPTOR_RANGE1 skydomeRange[1];
+	skydomeRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1); // Lighting buffer
+
+	CD3DX12_ROOT_PARAMETER1 rootParameters[5];
 	rootParameters[0].InitAsConstants(32, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); // MVP & Model
 	rootParameters[1].InitAsConstants(3, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX); // Scene info ( Camera... etc. ) 
 	rootParameters[2].InitAsDescriptorTable(1, &cbvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Lighting data
-	rootParameters[3].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Lighting data
+	rootParameters[3].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
+	rootParameters[4].InitAsDescriptorTable(1, &skydomeRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
 
 	// TODO: Maybe do a countof or something so you know how many are inside of the rootParameters...
-	rootSignature = new DXRootSignature(rootParameters, 4, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	rootSignature = new DXRootSignature(rootParameters, 5, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
 
 	UpdateLightBuffer();
+
+	skydome = new Texture("Assets/HDRI/testDome.hdr");
 }
 
+// TODO: move light out of Update into Editor
 void Renderer::Update(float deltaTime)
 {
 	elaspedTime += deltaTime;
@@ -147,6 +158,10 @@ void Renderer::Render()
 	// 4. Set the root arguments // 
 	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->Position, 0);
 	commandList->SetGraphicsRootDescriptorTable(2, lightData);
+
+	// Placeholder: Set SRV individual? // 
+	CD3DX12_GPU_DESCRIPTOR_HANDLE skydomeData = CBVHeap->GetGPUHandleAt(skydome->GetSRVIndex());
+	commandList->SetGraphicsRootDescriptorTable(4, skydomeData);
 
 	// 5. Draw Calls & Bind MVPs ( happens in Model.cpp ) // 
 	for (Model* model : models)
