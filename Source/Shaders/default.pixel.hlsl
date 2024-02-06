@@ -30,12 +30,12 @@ float3 GetSkydomeColor(PixelIN IN)
     float pi = 3.14159265;
     
     float3 incoming = normalize(IN.FragPosition - IN.CameraPosition);
-    float3 sampleRay = IN.Normal;
+    float3 sampleRay = reflect(incoming, IN.Normal);
     
     float theta = cos(sampleRay.y);
     float phi = atan2(sampleRay.z, sampleRay.x) + pi;
    
-    float3 n = normalize(IN.Normal);
+    float3 n = normalize(sampleRay);
     float u = atan2(n.x, n.z) / (2.0 * pi) + 0.5;
     float v = n.y * 0.5 + 0.5;
     
@@ -86,8 +86,6 @@ float4 main(PixelIN IN) : SV_TARGET
         
         total += result;
     }
-    
-    total = GetSkydomeColor(IN);
     
     return float4(total, 1.0f);
 }
