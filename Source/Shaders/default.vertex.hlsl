@@ -33,7 +33,6 @@ VertexShaderOutput main(VertexPosColor IN)
 {
 	VertexShaderOutput OUT;
 
-	// TODO: Use Model instead of MVP for Normal transformation
 	OUT.Position = mul(Transform.MVP, float4(IN.Position, 1.0f));
     OUT.Normal = normalize(mul(Transform.Model, float4(IN.Normal, 0.0f)).xyz);
     OUT.Color = IN.Color;

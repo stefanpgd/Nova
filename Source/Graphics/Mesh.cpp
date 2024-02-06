@@ -35,6 +35,17 @@ const unsigned int Mesh::GetIndicesCount()
 	return indicesCount;
 }
 
+bool Mesh::HasTextures()
+{
+	return loadedTextures;
+}
+
+// TODO: add type of texture in here to get ID
+unsigned int Mesh::GetTextureID()
+{
+	return albedoTexture->GetSRVIndex();
+}
+
 void Mesh::LoadAttribute(tinygltf::Model& model, tinygltf::Primitive& primitive, const std::string& attributeType)
 {
 	auto attribute = primitive.attributes.find(attributeType);
@@ -43,7 +54,9 @@ void Mesh::LoadAttribute(tinygltf::Model& model, tinygltf::Primitive& primitive,
 	// If not, stop here, the model isn't valid
 	if (attribute == primitive.attributes.end())
 	{
-		assert(false && "Attribute not available");
+		std::string message = "Attribute Type: '" + attributeType + "' missing from model.";
+		LOG(Log::MessageType::Debug, message);
+		return;
 	}
 
 	// Accessor: Tells use which view we need, what type of data is in it, and the amount/count of data.
@@ -143,7 +156,14 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	}
 
 	int textureID = material.pbrMetallicRoughness.baseColorTexture.index;
-	testTexture = new Texture(model, model.textures[textureID]);
+	if (textureID == -1)
+	{
+		LOG(Log::MessageType::Debug, "Texture 'BaseColor' is not available");
+		return;
+	}
+
+	albedoTexture = new Texture(model, model.textures[textureID]);
+	loadedTextures = true;
 }
 
 void Mesh::ApplyNodeTransform(const glm::mat4& transform)

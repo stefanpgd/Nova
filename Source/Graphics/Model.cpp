@@ -6,7 +6,6 @@
 #include "Framework/Mathematics.h"
 #include "Utilities/Logger.h"
 
-
 // TODO: Models still need to be saved in a database/library
 // TODO: Verify if models properly get freed 
 Model::Model(const std::string& filePath)
@@ -19,7 +18,7 @@ Model::Model(const std::string& filePath)
 	Name = filePath.substr(filePath.find_last_of("\\") + 1);
 
 	// Tiny glTF provides us with a model
-	// the model structure contains EVERYTHING already neatly prepared in vectors.
+	// The model structure contains EVERYTHING already neatly prepared in vectors.
 	bool result = loader.LoadASCIIFromFile(&model, &error, &warning, filePath);
 
 	if(!warning.empty())
@@ -46,18 +45,18 @@ void Model::Draw(const glm::mat4& viewProjection)
 		DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetGraphicsCommandList();
 
 	glm::mat4 MVP = viewProjection * Transform.GetModelMatrix();
-
 	commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
 	commandList->SetGraphicsRoot32BitConstants(0, 16, &Transform.GetModelMatrix(), 16);
-
 
 	DXDescriptorHeap* SRVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	for(Mesh* mesh : meshes)
 	{
-		// PLACEHOLDER TEXTURES //
-		CD3DX12_GPU_DESCRIPTOR_HANDLE textureData = SRVHeap->GetGPUHandleAt(mesh->testTexture->srvIndex);
-		commandList->SetGraphicsRootDescriptorTable(3, textureData);
+		if(mesh->HasTextures())
+		{
+			CD3DX12_GPU_DESCRIPTOR_HANDLE textureData = SRVHeap->GetGPUHandleAt(mesh->GetTextureID());
+			commandList->SetGraphicsRootDescriptorTable(3, textureData);
+		}
 
 		commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
 		commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());

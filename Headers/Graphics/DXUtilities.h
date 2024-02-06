@@ -74,25 +74,41 @@ inline void UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> commandList,
 	UpdateSubresources(commandList.Get(), *destinationResource, *intermediateResource, 0, 0, 1, &subresourceData);
 }
 
-inline void UploadSRVTest(ComPtr<ID3D12GraphicsCommandList2> commandList, ID3D12Resource* destinationResource, ID3D12Resource* intermediateResource, D3D12_SUBRESOURCE_DATA& subresource)
+inline void UploadPixelShaderResource(ComPtr<ID3D12Resource>& destinationResource, ComPtr<ID3D12Resource>& intermediateResource, D3D12_RESOURCE_DESC& resourceDescription, D3D12_SUBRESOURCE_DATA& subresource)
 {
-	// TODO: Read up on this stuff 
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
-	CD3DX12_RESOURCE_BARRIER copyBarrier = CD3DX12_RESOURCE_BARRIER::Transition(destinationResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-	CD3DX12_RESOURCE_BARRIER pixelBarrier = CD3DX12_RESOURCE_BARRIER::Transition(destinationResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	DXCommands* copyCommands = DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_COPY);
+	ComPtr<ID3D12GraphicsCommandList2> commandList = copyCommands->GetGraphicsCommandList();
+
+	D3D12_HEAP_PROPERTIES gpuHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	D3D12_HEAP_PROPERTIES uploadHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+
+	// 1.a Allocate heap on the GPU to upload the texture  //
+	ThrowIfFailed(device->CreateCommittedResource(&gpuHeap, D3D12_HEAP_FLAG_NONE,
+		&resourceDescription, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&destinationResource)));
+
+	// 1.b Allocate heap in RAM to upload the texture to //
+	unsigned int size = GetRequiredIntermediateSize(destinationResource.Get(), 0, 1);
+	D3D12_RESOURCE_DESC bufferDescription = CD3DX12_RESOURCE_DESC::Buffer(size);
+
+	ThrowIfFailed(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE,
+		&bufferDescription, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&intermediateResource)));
+
+	// 2. Prepare barriers & record commands //
+	CD3DX12_RESOURCE_BARRIER copyBarrier = CD3DX12_RESOURCE_BARRIER::Transition(destinationResource.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+	CD3DX12_RESOURCE_BARRIER pixelBarrier = CD3DX12_RESOURCE_BARRIER::Transition(destinationResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	
+	copyCommands->Flush();
+	copyCommands->ResetCommandList();
 
 	commandList->ResourceBarrier(1, &copyBarrier);
-	unsigned int size = GetRequiredIntermediateSize(destinationResource, 0, 1);
-
-	D3D12_HEAP_PROPERTIES properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(size);
-
-	// Create resource in upload heap
-	ThrowIfFailed(device->CreateCommittedResource(&properties, D3D12_HEAP_FLAG_NONE,
-		&desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&intermediateResource)));
-
-	UpdateSubresources(commandList.Get(), destinationResource, intermediateResource, 0, 0, 1, &subresource);
+	UpdateSubresources(commandList.Get(), destinationResource.Get(), intermediateResource.Get(), 0, 0, 1, &subresource);
 	commandList->ResourceBarrier(1, &pixelBarrier);
+
+	// 3. Execute upload and wait until it's finished // 
+	copyCommands->ExecuteCommandList(DXAccess::GetCurrentBackBufferIndex());
+	copyCommands->Signal();
+	copyCommands->WaitForFenceValue(DXAccess::GetCurrentBackBufferIndex());
 }
 
 // Ensures that the direct queue is paused so that a resource and its data can be updated 

@@ -28,8 +28,8 @@ public:
 	const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView();
 	const unsigned int GetIndicesCount();
 
-	// Placeholder //
-	Texture* testTexture;
+	bool HasTextures();
+	unsigned int GetTextureID();
 
 private:
 	void LoadAttribute(tinygltf::Model& model, tinygltf::Primitive& primitive, const std::string& attributeType);
@@ -50,5 +50,6 @@ private:
 	std::vector<unsigned int> indices;
 	unsigned int indicesCount = 0;
 
-
+	bool loadedTextures = false;
+	Texture* albedoTexture;
 };
