@@ -109,8 +109,6 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	delete[] buffer;
 
-	models.push_back(new Model("Assets/Models/SciFiHelm/SciFiHelmet.gltf"));
-
 	Vertex* screenVertices = new Vertex[4];
 	screenVertices[0].Position = glm::vec3(-1.0f, -1.0f, 0.0f);
 	screenVertices[1].Position = glm::vec3(-1.0f, 1.0f, 0.0f);
@@ -123,15 +121,17 @@ Renderer::Renderer(const std::wstring& applicationName)
 	screenVertices[3].TexCoord = glm::vec2(1.0f, 1.0f);
 
 	unsigned int* screenIndices = new unsigned int[6]
-		{	0, 1, 2, 0, 2, 3 };
+		{	2, 1, 0, 3, 2, 0 };
 
 	screenMesh = new Mesh(screenVertices, 4, screenIndices, 6);
 
 
-	CD3DX12_ROOT_PARAMETER1 screenRoot[1];
+	CD3DX12_ROOT_PARAMETER1 screenRoot[3];
 	screenRoot[0].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
+	screenRoot[1].InitAsDescriptorTable(1, &skydomeRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
+	screenRoot[2].InitAsConstants(3, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX); // Scene info ( Camera... etc. ) 
 
-	screenRootSig = new DXRootSignature(screenRoot, 1, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	screenRootSig = new DXRootSignature(screenRoot, _countof(screenRoot), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	screenPipeline = new DXPipeline("Source/Shaders/screen.vertex.hlsl", "Source/Shaders/screen.pixel.hlsl", screenRootSig);
 }
 
@@ -247,6 +247,9 @@ void Renderer::Render()
 	// Placeholder: Set SRV individual? // 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE screenTextureData = CBVHeap->GetGPUHandleAt(screenBackBuffer[backBufferIndex]->GetSRVIndex());
 	commandList->SetGraphicsRootDescriptorTable(0, screenTextureData);
+	commandList->SetGraphicsRootDescriptorTable(1, skydomeData);
+
+	commandList->SetGraphicsRoot32BitConstants(2, 3, &camera->GetForwardVector(), 0);
 
 	commandList->IASetVertexBuffers(0, 1, &screenMesh->GetVertexBufferView());
 	commandList->IASetIndexBuffer(&screenMesh->GetIndexBufferView());
