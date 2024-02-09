@@ -180,5 +180,7 @@
   <ItemGroup>
     <FxCompile Include="Source\Shaders\default.pixel.hlsl" />
     <FxCompile Include="Source\Shaders\default.vertex.hlsl" />
+    <FxCompile Include="Source\Shaders\screen.vertex.hlsl" />
+    <FxCompile Include="Source\Shaders\screen.pixel.hlsl" />
   </ItemGroup>
 </Project>

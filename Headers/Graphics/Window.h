@@ -40,6 +40,10 @@ private:
 public:
 	static const unsigned int BackBufferCount = 3;
 
+	// PLACEHOLDER //
+	// Attempt at using backbuffers as textures //
+	int backBufferSRVs[BackBufferCount];
+
 private:
 	// Window Settings //
 	std::wstring windowName;
@@ -63,4 +67,6 @@ private:
 	// Rasterizer Objects //
 	D3D12_VIEWPORT viewport;
 	D3D12_RECT scissorRect;
+
+
 };

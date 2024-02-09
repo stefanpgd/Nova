@@ -13,6 +13,7 @@
 // Renderer Components //
 #include "Graphics/Window.h"
 #include "Graphics/Model.h"
+#include "Graphics/Mesh.h"
 #include "Graphics/Camera.h"
 #include "Graphics/Texture.h"
 
@@ -37,6 +38,10 @@ using namespace RendererInternal;
 
 // TODO: Make own class?
 Texture* skydome;
+DXPipeline* screenPipeline;
+DXRootSignature* screenRootSig;
+Texture* screenBackBuffer[Window::BackBufferCount];
+Mesh* screenMesh;
 
 Renderer::Renderer(const std::wstring& applicationName)
 {
@@ -47,7 +52,7 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	CBVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1000, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	DSVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 5);
-	RTVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 3);
+	RTVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 10);
 
 	directCommands = new DXCommands(D3D12_COMMAND_LIST_TYPE_DIRECT, Window::BackBufferCount);
 	copyCommands = new DXCommands(D3D12_COMMAND_LIST_TYPE_DIRECT, 1);
@@ -62,25 +67,72 @@ Renderer::Renderer(const std::wstring& applicationName)
 	cbvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 1); // Lighting buffer
 
 	CD3DX12_DESCRIPTOR_RANGE1 srvRanges[1];
-	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // Lighting buffer
+	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); 
 
 	CD3DX12_DESCRIPTOR_RANGE1 skydomeRange[1];
-	skydomeRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1); // Lighting buffer
+	skydomeRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[5];
 	rootParameters[0].InitAsConstants(32, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); // MVP & Model
 	rootParameters[1].InitAsConstants(3, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX); // Scene info ( Camera... etc. ) 
 	rootParameters[2].InitAsDescriptorTable(1, &cbvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Lighting data
 	rootParameters[3].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
-	rootParameters[4].InitAsDescriptorTable(1, &skydomeRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
+	rootParameters[4].InitAsDescriptorTable(1, &skydomeRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // Testing 
 
 	// TODO: Maybe do a countof or something so you know how many are inside of the rootParameters...
-	rootSignature = new DXRootSignature(rootParameters, 5, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	rootSignature = new DXRootSignature(rootParameters, _countof(rootParameters), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
 
 	UpdateLightBuffer();
 
 	skydome = new Texture("Assets/HDRI/testDome.hdr");
+
+	int bufferSize = window->GetWindowWidth() * window->GetWindowHeight() * 4;
+	unsigned char* buffer = new unsigned char[bufferSize];
+
+	for(int i = 0; i < 3; i++)
+	{
+		screenBackBuffer[i] = new Texture(buffer, window->GetWindowWidth(), window->GetWindowHeight());
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV)->GetCPUHandleAt(i + 3);
+
+		ComPtr<ID3D12Resource> backBufferResource = screenBackBuffer[i]->GetResource();
+		DXAccess::GetDevice()->CreateRenderTargetView(backBufferResource.Get(), nullptr, rtvHandle);
+	}
+	//for(int i = 0; i < bufferSize; i += 4)
+	//{
+	//	buffer[i] = 255;
+	//	buffer[i + 1] = 255;
+	//	buffer[i + 2] = 255;
+	//	buffer[i + 3] = 255;
+	//}
+
+	delete[] buffer;
+
+	models.push_back(new Model("Assets/Models/SciFiHelm/SciFiHelmet.gltf"));
+
+	Vertex* screenVertices = new Vertex[4];
+	screenVertices[0].Position = glm::vec3(-1.0f, -1.0f, 0.0f);
+	screenVertices[1].Position = glm::vec3(-1.0f, 1.0f, 0.0f);
+	screenVertices[2].Position = glm::vec3(1.0f, 1.0f, 0.0f);
+	screenVertices[3].Position = glm::vec3(1.0f, -1.0f, 0.0f);
+
+	screenVertices[0].TexCoord = glm::vec2(0.0f, 1.0f);
+	screenVertices[1].TexCoord = glm::vec2(0.0f, 0.0f);
+	screenVertices[2].TexCoord = glm::vec2(1.0f, 0.0f);
+	screenVertices[3].TexCoord = glm::vec2(1.0f, 1.0f);
+
+	unsigned int* screenIndices = new unsigned int[6]
+		{	0, 1, 2, 0, 2, 3 };
+
+	screenMesh = new Mesh(screenVertices, 4, screenIndices, 6);
+
+
+	CD3DX12_ROOT_PARAMETER1 screenRoot[1];
+	screenRoot[0].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
+
+	screenRootSig = new DXRootSignature(screenRoot, 1, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	screenPipeline = new DXPipeline("Source/Shaders/screen.vertex.hlsl", "Source/Shaders/screen.pixel.hlsl", screenRootSig);
 }
 
 // TODO: move light out of Update into Editor
@@ -128,7 +180,6 @@ void Renderer::Render()
 {
 	// 0. Grab all relevant objects for the draw call //
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
-	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
 	ComPtr<ID3D12GraphicsCommandList2> commandList = directCommands->GetGraphicsCommandList();
 	ID3D12DescriptorHeap* heaps[] = { CBVHeap->GetAddress() };
 
@@ -138,11 +189,14 @@ void Renderer::Render()
 
 	// 1. Reset Command Allocator & List, afterwards prepare Render Target //
 	directCommands->ResetCommandList(backBufferIndex);
-	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+	ComPtr<ID3D12Resource> testBuffer = screenBackBuffer[backBufferIndex]->GetResource();
+	TransitionResource(testBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE testTarget = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV)->GetCPUHandleAt(backBufferIndex + 3);
 
 	// 2. Clear Screen & Depth Buffer //
-	float clearColor[4] = { 0.2f, 0.2f, 0.2f, 1.0f };
-	commandList->ClearRenderTargetView(renderTarget, clearColor, 0, nullptr);
+	float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	commandList->ClearRenderTargetView(testTarget, clearColor, 0, nullptr);
 	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	// 3. Setup Information for the Pipeline //
@@ -153,7 +207,7 @@ void Renderer::Render()
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->RSSetViewports(1, &window->GetViewport());
 	commandList->RSSetScissorRects(1, &window->GetScissorRect());
-	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
+	commandList->OMSetRenderTargets(1, &testTarget, FALSE, &dsv);
 
 	// 4. Set the root arguments // 
 	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->Position, 0);
@@ -164,7 +218,7 @@ void Renderer::Render()
 	commandList->SetGraphicsRootDescriptorTable(4, skydomeData);
 
 	// 5. Draw Calls & Bind MVPs ( happens in Model.cpp ) // 
-	for (Model* model : models)
+	for(Model* model : models)
 	{
 		model->Draw(camera->GetViewProjectionMatrix());
 	}
@@ -173,7 +227,33 @@ void Renderer::Render()
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 
 	// 7. Transition to a Present state, then execute the commands and present the next back buffer //
+	TransitionResource(testBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+	// SCREEN ATTEMPT //
+	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
+	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+	commandList->ClearRenderTargetView(renderTarget, clearColor, 0, nullptr);
+	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+	commandList->SetGraphicsRootSignature(screenRootSig->GetAddress());
+	commandList->SetPipelineState(screenPipeline->GetAddress());
+	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
+
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->RSSetViewports(1, &window->GetViewport());
+	commandList->RSSetScissorRects(1, &window->GetScissorRect());
+	
+	// Placeholder: Set SRV individual? // 
+	CD3DX12_GPU_DESCRIPTOR_HANDLE screenTextureData = CBVHeap->GetGPUHandleAt(screenBackBuffer[backBufferIndex]->GetSRVIndex());
+	commandList->SetGraphicsRootDescriptorTable(0, screenTextureData);
+
+	commandList->IASetVertexBuffers(0, 1, &screenMesh->GetVertexBufferView());
+	commandList->IASetIndexBuffer(&screenMesh->GetIndexBufferView());
+	commandList->DrawIndexedInstanced(screenMesh->GetIndicesCount(), 1, 0, 0, 0);
+	
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
 	directCommands->ExecuteCommandList(backBufferIndex);
 	window->Present();
 

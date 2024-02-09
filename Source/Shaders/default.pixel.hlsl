@@ -87,5 +87,7 @@ float4 main(PixelIN IN) : SV_TARGET
         total += result;
     }
     
+    total = GetSkydomeColor(IN);
+    
     return float4(total, 1.0f);
 }

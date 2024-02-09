@@ -31,6 +31,11 @@ Texture::Texture(const std::string& filePath)
 	UploadData(buffer, width, height);
 }
 
+Texture::Texture(unsigned char* data, int width, int height)
+{
+	UploadData(data, width, height);
+}
+
 int Texture::GetSRVIndex()
 {
 	return srvIndex;
@@ -41,10 +46,16 @@ D3D12_GPU_VIRTUAL_ADDRESS Texture::GetGPULocation()
 	return textureResource->GetGPUVirtualAddress();
 }
 
+ComPtr<ID3D12Resource> Texture::GetResource()
+{
+	return textureResource;
+}
+
 void Texture::UploadData(unsigned char* data, int width, int height)
 {
 	D3D12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Tex2D(
 		DXGI_FORMAT_R8G8B8A8_UNORM, width, height);
+	description.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
 	D3D12_SUBRESOURCE_DATA subresource;
 	subresource.pData = data;

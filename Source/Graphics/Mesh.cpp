@@ -20,6 +20,21 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, glm::mat4& tr
 	UploadBuffers();
 }
 
+Mesh::Mesh(Vertex* verts, unsigned int vertexCount, unsigned int* indi, unsigned int indexCount)
+{
+	for(int i = 0; i < vertexCount; i++)
+	{
+		vertices.push_back(verts[i]);
+	}
+
+	for(int i = 0; i < indexCount; i++)
+	{
+		indices.push_back(indi[i]);
+	}
+
+	UploadBuffers();
+}
+
 const D3D12_VERTEX_BUFFER_VIEW& Mesh::GetVertexBufferView()
 {
 	return vertexBufferView;

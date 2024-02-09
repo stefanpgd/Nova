@@ -181,6 +181,19 @@ void Window::UpdateRenderTargets()
 
 		backBuffers[i] = backBuffer;
 	}
+
+	for(int i = 0; i < BackBufferCount; i++)
+	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.Texture2D.MipLevels = 1;
+
+		DXDescriptorHeap* CBVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		backBufferSRVs[i] = CBVHeap->GetNextAvailableIndex();
+		device->CreateShaderResourceView(backBuffers[i].Get(), &srvDesc, CBVHeap->GetCPUHandleAt(backBufferSRVs[i]));
+	}
 }
 
 void Window::UpdateDepthBuffer()

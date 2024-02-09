@@ -74,7 +74,8 @@ inline void UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> commandList,
 	UpdateSubresources(commandList.Get(), *destinationResource, *intermediateResource, 0, 0, 1, &subresourceData);
 }
 
-inline void UploadPixelShaderResource(ComPtr<ID3D12Resource>& destinationResource, ComPtr<ID3D12Resource>& intermediateResource, D3D12_RESOURCE_DESC& resourceDescription, D3D12_SUBRESOURCE_DATA& subresource)
+inline void UploadPixelShaderResource(ComPtr<ID3D12Resource>& destinationResource, ComPtr<ID3D12Resource>& intermediateResource, D3D12_RESOURCE_DESC& resourceDescription, 
+	D3D12_SUBRESOURCE_DATA& subresource)
 {
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 	DXCommands* copyCommands = DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_COPY);

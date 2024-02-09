@@ -85,8 +85,11 @@ void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
 	rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 	CD3DX12_RASTERIZER_DESC rasterizerDesc = {};
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+
+	//rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;
+	//rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	PSS.RootSignature = rootSignature->Get().Get();
 	PSS.InputLayout = { inputLayout, _countof(inputLayout) };

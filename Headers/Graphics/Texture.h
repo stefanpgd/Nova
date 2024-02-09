@@ -11,9 +11,11 @@ class Texture
 public:
 	Texture(tinygltf::Model& model, tinygltf::Texture& texture);
 	Texture(const std::string& filePath);
+	Texture(unsigned char* data, int width, int height);
 
 	int GetSRVIndex();
 	D3D12_GPU_VIRTUAL_ADDRESS GetGPULocation();
+	ComPtr<ID3D12Resource> GetResource();
 
 private:
 	void UploadData(unsigned char* data, int width, int height);

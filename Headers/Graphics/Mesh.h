@@ -23,6 +23,7 @@ class Mesh
 {
 public:
 	Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, glm::mat4& transform);
+	Mesh(Vertex* vertices, unsigned int vertexCount, unsigned int* indices, unsigned int indexCount);
 
 	const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView();
 	const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView();
