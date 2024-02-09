@@ -182,5 +182,7 @@
     <FxCompile Include="Source\Shaders\default.vertex.hlsl" />
     <FxCompile Include="Source\Shaders\screen.vertex.hlsl" />
     <FxCompile Include="Source\Shaders\screen.pixel.hlsl" />
+    <FxCompile Include="Source\Shaders\skydome.vertex.hlsl" />
+    <FxCompile Include="Source\Shaders\skydome.pixel.hlsl" />
   </ItemGroup>
 </Project>

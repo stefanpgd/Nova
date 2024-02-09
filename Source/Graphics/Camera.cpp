@@ -31,13 +31,13 @@ void Camera::Update(float deltaTime)
 	Position.y += up * movement;
 	Position.z += forward * movement;
 
+	time += deltaTime;
+
 	UpdateViewMatrix();
 }
 
 void Camera::UpdateViewMatrix()
 {
-	// Placeholder until we've a look around
-	const glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
 	const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	view = glm::lookAt(Position, Position + front, up);

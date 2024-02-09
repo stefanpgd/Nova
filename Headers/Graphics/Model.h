@@ -14,6 +14,7 @@ public:
 	Model(const std::string& filePath);
 
 	void Draw(const glm::mat4& viewProjection);
+	Mesh* GetMesh(int index);
 
 public:
 	Transform Transform;

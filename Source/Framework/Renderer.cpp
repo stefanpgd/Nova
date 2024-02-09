@@ -42,6 +42,11 @@ DXPipeline* screenPipeline;
 DXRootSignature* screenRootSig;
 Texture* screenBackBuffer[Window::BackBufferCount];
 Mesh* screenMesh;
+Model* skydomeModel;
+Mesh* skyMesh;
+
+DXRootSignature* skyRoot;
+DXPipeline* skyPipeline;
 
 Renderer::Renderer(const std::wstring& applicationName)
 {
@@ -126,13 +131,22 @@ Renderer::Renderer(const std::wstring& applicationName)
 	screenMesh = new Mesh(screenVertices, 4, screenIndices, 6);
 
 
-	CD3DX12_ROOT_PARAMETER1 screenRoot[3];
-	screenRoot[0].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
-	screenRoot[1].InitAsDescriptorTable(1, &skydomeRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
-	screenRoot[2].InitAsConstants(3, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX); // Scene info ( Camera... etc. ) 
+	CD3DX12_ROOT_PARAMETER1 screenRoot[1];
+	screenRoot[0].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); 
 
 	screenRootSig = new DXRootSignature(screenRoot, _countof(screenRoot), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	screenPipeline = new DXPipeline("Source/Shaders/screen.vertex.hlsl", "Source/Shaders/screen.pixel.hlsl", screenRootSig);
+
+	skydomeModel = new Model("Assets/Models/Skydome/skydome.gltf");
+	skyMesh = skydomeModel->GetMesh(0);
+
+
+	CD3DX12_ROOT_PARAMETER1 skyRootParams[2];
+	skyRootParams[0].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+	skyRootParams[1].InitAsConstants(3, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+
+	skyRoot = new DXRootSignature(skyRootParams, _countof(skyRootParams), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	skyPipeline = new DXPipeline("Source/Shaders/skydome.vertex.hlsl", "Source/Shaders/skydome.pixel.hlsl", skyRoot);
 }
 
 // TODO: move light out of Update into Editor
@@ -236,21 +250,32 @@ void Renderer::Render()
 	commandList->ClearRenderTargetView(renderTarget, clearColor, 0, nullptr);
 	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	commandList->SetGraphicsRootSignature(screenRootSig->GetAddress());
-	commandList->SetPipelineState(screenPipeline->GetAddress());
 	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
 
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->RSSetViewports(1, &window->GetViewport());
 	commandList->RSSetScissorRects(1, &window->GetScissorRect());
-	
+
+	commandList->SetGraphicsRootSignature(skyRoot->GetAddress());
+	commandList->SetPipelineState(skyPipeline->GetAddress());
+
+	// Placeholder: Set SRV individual? // 
+	commandList->SetGraphicsRootDescriptorTable(0, skydomeData);
+	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->GetForwardVector(), 0);
+
+	commandList->IASetVertexBuffers(0, 1, &skyMesh->GetVertexBufferView());
+	commandList->IASetIndexBuffer(&skyMesh->GetIndexBufferView());
+	commandList->DrawIndexedInstanced(skyMesh->GetIndicesCount(), 1, 0, 0, 0);
+
+	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+	commandList->SetGraphicsRootSignature(screenRootSig->GetAddress());
+	commandList->SetPipelineState(screenPipeline->GetAddress());
+
 	// Placeholder: Set SRV individual? // 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE screenTextureData = CBVHeap->GetGPUHandleAt(screenBackBuffer[backBufferIndex]->GetSRVIndex());
+
 	commandList->SetGraphicsRootDescriptorTable(0, screenTextureData);
-	commandList->SetGraphicsRootDescriptorTable(1, skydomeData);
-
-	commandList->SetGraphicsRoot32BitConstants(2, 3, &camera->GetForwardVector(), 0);
-
 	commandList->IASetVertexBuffers(0, 1, &screenMesh->GetVertexBufferView());
 	commandList->IASetIndexBuffer(&screenMesh->GetIndexBufferView());
 	commandList->DrawIndexedInstanced(screenMesh->GetIndicesCount(), 1, 0, 0, 0);

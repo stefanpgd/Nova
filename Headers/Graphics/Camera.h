@@ -27,12 +27,14 @@ private:
 
 	// placeholder till we've look around.
 	// Mainly used to test some stuff in shaders atm
-	const glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
 
-	float FOV = 45.0f;
+	float FOV = 60.0f;
 	float nearClip = 0.01f;
 	float farClip = 1000.0f;
 	float aspectRatio;
+
+	float time = 0.0f;
 
 	float speed = 12.0f;
 	float speedMultiplier = 6.0f;

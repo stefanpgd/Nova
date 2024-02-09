@@ -65,6 +65,11 @@ void Model::Draw(const glm::mat4& viewProjection)
 	}
 }
 
+Mesh* Model::GetMesh(int index)
+{
+	return meshes[index];
+}
+
 void Model::TraverseRootNodes(tinygltf::Model& model)
 {
 	auto scene = model.scenes[model.defaultScene];
