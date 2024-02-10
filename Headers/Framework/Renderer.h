@@ -41,7 +41,6 @@ private:
 	ScreenStage* screenStage;
 	SkydomeStage* skydomeStage;
 
-
 	// TODO: Maybe encapsulate scene data 
 	// ( Camera, Models, Lights... etc. )
 	// Also make it part of Framework instead of Graphics

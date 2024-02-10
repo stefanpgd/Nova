@@ -25,17 +25,26 @@ void SkydomeStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 {
 	// 0. Get all relevant objects //
 	DXDescriptorHeap* CBVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	DXDescriptorHeap* DSVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+	ComPtr<ID3D12Resource> screenBuffer = window->GetCurrentScreenBuffer();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE screenRTV = window->GetCurrentScreenRTV();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = DSVHeap->GetCPUHandleAt(0);
 	CD3DX12_GPU_DESCRIPTOR_HANDLE skydomeData = CBVHeap->GetGPUHandleAt(skydomeTexture->GetSRVIndex());
 
-	// 1. Bind pipeline & root //
+	// 1. Prepare the screen buffer to be used as Render Target //
+	TransitionResource(screenBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	BindAndClearRenderTarget(window, &screenRTV, &depthView);
+
+	// 2. Bind pipeline & root //
 	commandList->SetGraphicsRootSignature(rootSignature->GetAddress());
 	commandList->SetPipelineState(pipeline->GetAddress());
 
-	// 2. Bind skydome texture & Forward Vector //
+	// 3. Bind skydome texture & Forward Vector //
 	commandList->SetGraphicsRootDescriptorTable(0, skydomeData);
 	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->GetForwardVector(), 0);
 
-	// 3. Render Skydome (mesh) //
+	// 4. Render Skydome (mesh) //
 	commandList->IASetVertexBuffers(0, 1, &skydomeMesh->GetVertexBufferView());
 	commandList->IASetIndexBuffer(&skydomeMesh->GetIndexBufferView());
 	commandList->DrawIndexedInstanced(skydomeMesh->GetIndicesCount(), 1, 0, 0, 0);

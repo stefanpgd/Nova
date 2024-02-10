@@ -108,9 +108,9 @@ inline void UploadPixelShaderResource(ComPtr<ID3D12Resource>& destinationResourc
 	commandList->ResourceBarrier(1, &pixelBarrier);
 
 	// 3. Execute upload and wait until it's finished // 
-	copyCommands->ExecuteCommandList(DXAccess::GetCurrentBackBufferIndex());
+	copyCommands->ExecuteCommandList();
 	copyCommands->Signal();
-	copyCommands->WaitForFenceValue(DXAccess::GetCurrentBackBufferIndex());
+	copyCommands->WaitForFenceValue();
 }
 
 // Ensures that the direct queue is paused so that a resource and its data can be updated 

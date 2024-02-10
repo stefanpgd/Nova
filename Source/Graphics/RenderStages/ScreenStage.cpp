@@ -5,6 +5,8 @@
 #include "Graphics/DXRootSignature.h"
 #include "Graphics/DXDescriptorHeap.h"
 #include "Graphics/Mesh.h"
+#include "Graphics/Window.h"
+#include "Graphics/DXUtilities.h"
 
 ScreenStage::ScreenStage(Window* window) : RenderStage(window)
 {
@@ -12,31 +14,35 @@ ScreenStage::ScreenStage(Window* window) : RenderStage(window)
 	CreateScreenMesh();
 }
 
-void ScreenStage::PlaceHolderFunction(CD3DX12_GPU_DESCRIPTOR_HANDLE handle)
-{
-	this->handle = handle;
-}
-
 void ScreenStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 {
 	// 0. Grab all relevant variables //
-	CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV)->GetCPUHandleAt(0);
+	DXDescriptorHeap* DSVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-	// 1. Bind pipeline & root // 
+	ComPtr<ID3D12Resource> screenBuffer = window->GetCurrentScreenBuffer();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE renderTexture = window->GetCurrentRenderSRV();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = DSVHeap->GetCPUHandleAt(0);
+
+	// 1. Clear Depth Buffer in-case it was used last stage 
+	commandList->ClearDepthStencilView(depthView, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+	// 2. Bind pipeline & root // 
 	commandList->SetGraphicsRootSignature(rootSignature->GetAddress());
 	commandList->SetPipelineState(pipeline->GetAddress());
 
-	// 2. Clear depth buffer to be (re-)used //
-	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	// 3. Clear depth buffer to be (re-)used //
+	commandList->ClearDepthStencilView(depthView, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	// 3. Use Render Target as Texture //
-	// Temporarly get handle via placeholderfunction... 
-	commandList->SetGraphicsRootDescriptorTable(0, handle);
+	// 4. Use Render Target as Texture //
+	commandList->SetGraphicsRootDescriptorTable(0, renderTexture);
 
-	// 4. Bind & Render Screen Pass //
+	// 5. Bind & Render Screen Pass //
 	commandList->IASetVertexBuffers(0, 1, &screenMesh->GetVertexBufferView());
 	commandList->IASetIndexBuffer(&screenMesh->GetIndexBufferView());
 	commandList->DrawIndexedInstanced(screenMesh->GetIndicesCount(), 1, 0, 0, 0);
+
+	// 6. Prepare screen buffer to be presented, since this is the last stage //
+	TransitionResource(screenBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 }
 
 void ScreenStage::CreatePipeline()

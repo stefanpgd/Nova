@@ -14,7 +14,6 @@ class ScreenStage : public RenderStage
 public:
 	ScreenStage(Window* window);
 
-	void PlaceHolderFunction(CD3DX12_GPU_DESCRIPTOR_HANDLE handle);
 	void RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList) override;
 
 private:
@@ -22,7 +21,5 @@ private:
 	void CreateScreenMesh();
 
 private:
-	CD3DX12_GPU_DESCRIPTOR_HANDLE handle;
-
 	Mesh* screenMesh;
 };

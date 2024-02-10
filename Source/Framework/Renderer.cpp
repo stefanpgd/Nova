@@ -1,4 +1,5 @@
 #include "Framework/Renderer.h"
+
 #include "Utilities/Logger.h"
 
 // DirectX Components //
@@ -41,9 +42,6 @@ namespace RendererInternal
 }
 using namespace RendererInternal;
 
-// TODO: Move to window
-Texture* screenBackBuffer[Window::BackBufferCount];
-
 Renderer::Renderer(const std::wstring& applicationName)
 {
 	// Initialization for all vital components for rendering //
@@ -62,36 +60,7 @@ Renderer::Renderer(const std::wstring& applicationName)
 	camera = new Camera(width, height);
 
 	InitializeImGui();
-
-	// Pipeline // 
-
-
-	// TODO: Maybe do a countof or something so you know how many are inside of the rootParameters...
-
-
 	UpdateLightBuffer();
-
-	int bufferSize = window->GetWindowWidth() * window->GetWindowHeight() * 4;
-	unsigned char* buffer = new unsigned char[bufferSize];
-
-	for(int i = 0; i < 3; i++)
-	{
-		screenBackBuffer[i] = new Texture(buffer, window->GetWindowWidth(), window->GetWindowHeight());
-
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV)->GetCPUHandleAt(i + 3);
-
-		ComPtr<ID3D12Resource> backBufferResource = screenBackBuffer[i]->GetResource();
-		DXAccess::GetDevice()->CreateRenderTargetView(backBufferResource.Get(), nullptr, rtvHandle);
-	}
-	//for(int i = 0; i < bufferSize; i += 4)
-	//{
-	//	buffer[i] = 255;
-	//	buffer[i + 1] = 255;
-	//	buffer[i + 2] = 255;
-	//	buffer[i + 3] = 255;
-	//}
-
-	delete[] buffer;
 
 	sceneStage = new SceneStage(window, camera, models, &lights, lightCBVIndex);
 	screenStage = new ScreenStage(window);
@@ -141,59 +110,26 @@ void Renderer::Update(float deltaTime)
 
 void Renderer::Render()
 {
-	// 0. Grab all relevant objects for the draw call //
+	// 0. Grab all relevant objects to perform all stages //
 	unsigned int backBufferIndex = window->GetCurrentBackBufferIndex();
 	ComPtr<ID3D12GraphicsCommandList2> commandList = directCommands->GetGraphicsCommandList();
 	ID3D12DescriptorHeap* heaps[] = { CBVHeap->GetAddress() };
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE renderTarget = window->GetCurrentBackBufferRTV();
-	CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = DSVHeap->GetCPUHandleAt(0);
-	CD3DX12_GPU_DESCRIPTOR_HANDLE lightData = CBVHeap->GetGPUHandleAt(lightCBVIndex);
-
-	// 1. Reset Command Allocator & List, afterwards prepare Render Target //
+	// 1. Reset & prepare command allocator //
 	directCommands->ResetCommandList(backBufferIndex);
 
-	ComPtr<ID3D12Resource> testBuffer = screenBackBuffer[backBufferIndex]->GetResource();
-	TransitionResource(testBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE testTarget = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV)->GetCPUHandleAt(backBufferIndex + 3);
-
-	// 3. Setup Information for the Pipeline //
+	// 2. Bind general resources & Set pipeline parameters //
 	commandList->SetDescriptorHeaps(1, heaps);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// TODO: Move to Bind And Clear??
-	BindAndClearRenderTarget(window, &testTarget, &dsv);
-
+	// 3. Record Render Stages //
 	sceneStage->RecordStage(commandList);
-
-	// 6. Apply draw data from UI / ImGui //
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
-
-	// 7. Transition to a Present state, then execute the commands and present the next back buffer //
-	TransitionResource(testBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-	// SCREEN ATTEMPT //
-	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
-	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-	BindAndClearRenderTarget(window, &renderTarget, &dsv);
-
 	skydomeStage->RecordStage(commandList);
-
-	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-	// Placeholder: Set SRV individual? // 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE screenTextureData = CBVHeap->GetGPUHandleAt(screenBackBuffer[backBufferIndex]->GetSRVIndex());
-
-	screenStage->PlaceHolderFunction(screenTextureData);
 	screenStage->RecordStage(commandList);
 
-	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-
+	// 4. Execute List, Present and wait for the next frame to be ready //
 	directCommands->ExecuteCommandList(backBufferIndex);
 	window->Present();
-
-	// 8. Before we go to the next cycle, we gotta make sure that "next" back buffer is available for use //
 	directCommands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
 }
 

@@ -11,6 +11,7 @@ using namespace Microsoft::WRL;
 #include <dxgi1_6.h>
 
 class DXDescriptorHeap;
+class Texture;
 
 class Window
 {
@@ -21,8 +22,15 @@ public:
 	void Resize();
 
 	unsigned int GetCurrentBackBufferIndex();
-	ComPtr<ID3D12Resource> GetCurrentBackBuffer();
-	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCurrentBackBufferRTV();
+
+	// Render Targets are back buffers used to draw the scene into //
+	ComPtr<ID3D12Resource> GetCurrentRenderBuffer();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCurrentRenderRTV();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetCurrentRenderSRV();
+
+	// Screen Buffers are back-buffers of the Swap Chain //
+	ComPtr<ID3D12Resource> GetCurrentScreenBuffer();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCurrentScreenRTV();
 
 	HWND GetHWND();
 	unsigned int GetWindowWidth();
@@ -34,7 +42,8 @@ private:
 	void SetupWindow();
 	void CreateSwapChain();
 
-	void UpdateRenderTargets();
+	void UpdateRenderBuffers();
+	void UpdateScreenBuffers();
 	void UpdateDepthBuffer();
 
 public:
@@ -42,7 +51,6 @@ public:
 
 	// PLACEHOLDER //
 	// Attempt at using backbuffers as textures //
-	int backBufferSRVs[BackBufferCount];
 
 private:
 	// Window Settings //
@@ -56,10 +64,15 @@ private:
 	bool tearingSupported = true;
 	bool fullscreen = false;
 
-	// Swap Chain //
+	// Render Buffers //
+	Texture* renderBuffers[BackBufferCount];
+	int renderBufferRTVs[BackBufferCount];
+	int renderBufferSRVs[BackBufferCount];
+
+	// Screen Buffers //
 	ComPtr<IDXGISwapChain4> swapChain;
-	ComPtr<ID3D12Resource> backBuffers[BackBufferCount];
-	DXDescriptorHeap* rtvHeap;
+	ComPtr<ID3D12Resource> screenBuffers[BackBufferCount];
+	int screenBufferRTVs[BackBufferCount];
 
 	// Depth Buffer //
 	ComPtr<ID3D12Resource> depthBuffer;
@@ -67,6 +80,4 @@ private:
 	// Rasterizer Objects //
 	D3D12_VIEWPORT viewport;
 	D3D12_RECT scissorRect;
-
-
 };

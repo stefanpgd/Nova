@@ -13,6 +13,8 @@ public:
 	Texture(const std::string& filePath);
 	Texture(unsigned char* data, int width, int height);
 
+	~Texture();
+
 	int GetSRVIndex();
 	D3D12_GPU_VIRTUAL_ADDRESS GetGPULocation();
 	ComPtr<ID3D12Resource> GetResource();

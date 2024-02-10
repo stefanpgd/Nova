@@ -3,14 +3,13 @@
 #include "Graphics/DXAccess.h"
 #include "Graphics/DXDescriptorHeap.h"
 #include "Graphics/DXCommands.h"
+#include "Graphics/Texture.h"
 
 #include <cassert>
 
 Window::Window(const std::wstring& applicationName, unsigned int windowWidth, unsigned int windowHeight) :
 	windowName(applicationName), windowWidth(windowWidth), windowHeight(windowHeight)
 {
-	rtvHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
 	// Check for Tearing Support //
 	ComPtr<IDXGIFactory5> factory5;
 	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&factory5)));
@@ -20,10 +19,20 @@ Window::Window(const std::wstring& applicationName, unsigned int windowWidth, un
 		tearingSupported = false;
 	}
 
+	DXDescriptorHeap* RTVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	// Get RTV indices for Screen & Render Buffers //
+	for(int i = 0; i < BackBufferCount; i++)
+	{
+		renderBufferRTVs[i] = RTVHeap->GetNextAvailableIndex();
+		screenBufferRTVs[i] = RTVHeap->GetNextAvailableIndex();
+	}
+
 	SetupWindow();
 	CreateSwapChain();
 
-	UpdateRenderTargets();
+	UpdateRenderBuffers();
+	UpdateScreenBuffers();
 	UpdateDepthBuffer();
 
 	scissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
@@ -51,64 +60,17 @@ void Window::Resize()
 	{
 		windowWidth = width > 1 ? width : 1;
 		windowHeight = height > 1 ? height : 1;
-
-		for(int i = 0; i < BackBufferCount; ++i)
-		{
-			// Any references to the back buffers must be released
-			// before the swap chain can be resized.
-			backBuffers[i].Reset();
-		}
-		depthBuffer.Reset();
-
-		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-		ThrowIfFailed(swapChain->GetDesc(&swapChainDesc));
-		ThrowIfFailed(swapChain->ResizeBuffers(BackBufferCount, windowWidth, windowHeight, swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
-
-		UpdateRenderTargets();
-		UpdateDepthBuffer();
-
 		viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(windowWidth), static_cast<float>(windowHeight));
+
+		UpdateRenderBuffers();
+		UpdateScreenBuffers();
+		UpdateDepthBuffer();
 	}
 }
 
 unsigned int Window::GetCurrentBackBufferIndex()
 {
 	return swapChain->GetCurrentBackBufferIndex();
-}
-
-ComPtr<ID3D12Resource> Window::GetCurrentBackBuffer()
-{
-	return backBuffers[GetCurrentBackBufferIndex()];
-}
-
-CD3DX12_CPU_DESCRIPTOR_HANDLE Window::GetCurrentBackBufferRTV()
-{
-	return rtvHeap->GetCPUHandleAt(GetCurrentBackBufferIndex());
-}
-
-HWND Window::GetHWND()
-{
-	return windowHandle;
-}
-
-unsigned int Window::GetWindowWidth()
-{
-	return windowWidth;
-}
-
-unsigned int Window::GetWindowHeight()
-{
-	return windowHeight;
-}
-
-const D3D12_VIEWPORT& Window::GetViewport()
-{
-	return viewport;
-}
-
-const D3D12_RECT& Window::GetScissorRect()
-{
-	return scissorRect;
 }
 
 void Window::SetupWindow()
@@ -167,37 +129,87 @@ void Window::CreateSwapChain()
 	ThrowIfFailed(swapChain1.As(&swapChain));
 }
 
-void Window::UpdateRenderTargets()
+void Window::UpdateRenderBuffers()
 {
+	// 1. Release old render buffers //
+	for(int i = 0; i < BackBufferCount; i++)
+	{
+		delete renderBuffers[i];
+	}
+
+	// 2. Create new Render Buffers/Targets with Textures //
+	int bufferSize = windowWidth * windowHeight * sizeof(unsigned int);
+	unsigned char* buffer = new unsigned char[bufferSize];
+
+	for(int i = 0; i < 3; i++)
+	{
+		renderBuffers[i] = new Texture(buffer, windowWidth, windowHeight);
+	}
+
+	delete[] buffer;
+
+	// 3. Update Render Buffer RTVs & SRVs //
+	DXDescriptorHeap* RTVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	DXDescriptorHeap* CBVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 
 	for(int i = 0; i < BackBufferCount; i++)
 	{
-		ComPtr<ID3D12Resource> backBuffer;
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUHandleAt(i);
+		// RTV //
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV)->GetCPUHandleAt(renderBufferRTVs[i]);
+		ComPtr<ID3D12Resource> backBufferResource = renderBuffers[i]->GetResource();
+		DXAccess::GetDevice()->CreateRenderTargetView(backBufferResource.Get(), nullptr, rtvHandle);
 
-		ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer)));
-		device->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
-
-		backBuffers[i] = backBuffer;
-	}
-
-	for(int i = 0; i < BackBufferCount; i++)
-	{
+		// SRV //
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srvDesc.Texture2D.MipLevels = 1;
 
-		DXDescriptorHeap* CBVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		backBufferSRVs[i] = CBVHeap->GetNextAvailableIndex();
-		device->CreateShaderResourceView(backBuffers[i].Get(), &srvDesc, CBVHeap->GetCPUHandleAt(backBufferSRVs[i]));
+		renderBufferSRVs[i] = CBVHeap->GetNextAvailableIndex();
+		ComPtr<ID3D12Resource> textureResource = renderBuffers[i]->GetResource();
+		device->CreateShaderResourceView(textureResource.Get(), &srvDesc, CBVHeap->GetCPUHandleAt(renderBufferSRVs[i]));
+	}
+}
+
+void Window::UpdateScreenBuffers()
+{
+	// 1. Release resources to free up memory //
+	for(int i = 0; i < BackBufferCount; ++i)
+	{
+		// Any references to the back buffers must be released
+		// before the swap chain can be resized.
+		screenBuffers[i].Reset();
+	}
+
+	// 2. Resize swap chain ( screen buffers ) //
+	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+	ThrowIfFailed(swapChain->GetDesc(&swapChainDesc));
+	ThrowIfFailed(swapChain->ResizeBuffers(BackBufferCount, windowWidth, windowHeight, swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
+
+	// 3. Create new RTVs //
+	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
+	DXDescriptorHeap* RTVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	for(int i = 0; i < BackBufferCount; i++)
+	{
+		ComPtr<ID3D12Resource> backBuffer;
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = RTVHeap->GetCPUHandleAt(screenBufferRTVs[i]);
+
+		ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer)));
+		device->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
+
+		screenBuffers[i] = backBuffer;
 	}
 }
 
 void Window::UpdateDepthBuffer()
 {
+	// 1. Release resouce //
+	depthBuffer.Reset();
+
+	// 2. Create a new Depth Buffer //
 	ComPtr<ID3D12Device2> device = DXAccess::GetDevice();
 	DXDescriptorHeap* dsvHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
@@ -209,11 +221,10 @@ void Window::UpdateDepthBuffer()
 	CD3DX12_RESOURCE_DESC depthDescription = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT,
 		windowWidth, windowHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
-	// Create Depth Buffer (based on window's size) //
 	ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE,
 		&depthDescription, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(&depthBuffer)));
 
-	// Create Depth-Stencil view //
+	// 3. Create Depth-Stencil view //
 	D3D12_DEPTH_STENCIL_VIEW_DESC DSV;
 	DSV.Format = DXGI_FORMAT_D32_FLOAT;
 	DSV.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
@@ -222,3 +233,44 @@ void Window::UpdateDepthBuffer()
 
 	device->CreateDepthStencilView(depthBuffer.Get(), &DSV, dsvHeap->GetCPUHandleAt(0));
 }
+
+#pragma region Getters
+ComPtr<ID3D12Resource> Window::GetCurrentRenderBuffer()
+{
+	int index = GetCurrentBackBufferIndex();
+	return renderBuffers[index]->GetResource();
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE Window::GetCurrentRenderRTV()
+{
+	DXDescriptorHeap* RTVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	int index = GetCurrentBackBufferIndex();
+	return RTVHeap->GetCPUHandleAt(renderBufferRTVs[index]);
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE Window::GetCurrentRenderSRV()
+{
+	DXDescriptorHeap* SRVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	int index = GetCurrentBackBufferIndex();
+	return SRVHeap->GetGPUHandleAt(renderBuffers[index]->GetSRVIndex());
+}
+
+ComPtr<ID3D12Resource> Window::GetCurrentScreenBuffer()
+{
+	int index = GetCurrentBackBufferIndex();
+	return screenBuffers[index];
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE Window::GetCurrentScreenRTV()
+{
+	DXDescriptorHeap* RTVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	int index = GetCurrentBackBufferIndex();
+	return RTVHeap->GetCPUHandleAt(screenBufferRTVs[index]);
+}
+
+HWND Window::GetHWND() { return windowHandle; }
+unsigned int Window::GetWindowWidth() { return windowWidth; }
+unsigned int Window::GetWindowHeight() { return windowHeight; }
+const D3D12_VIEWPORT& Window::GetViewport() { return viewport; }
+const D3D12_RECT& Window::GetScissorRect() { return scissorRect; }
+#pragma endregion

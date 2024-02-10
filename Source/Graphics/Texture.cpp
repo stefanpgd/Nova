@@ -36,6 +36,11 @@ Texture::Texture(unsigned char* data, int width, int height)
 	UploadData(data, width, height);
 }
 
+Texture::~Texture()
+{
+	textureResource.Reset();
+}
+
 int Texture::GetSRVIndex()
 {
 	return srvIndex;

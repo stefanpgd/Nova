@@ -1,12 +1,14 @@
 #include "Graphics/RenderStages/SceneStage.h"
 
-#include <d3dx12.h>
 #include "Graphics/DXRootSignature.h"
 #include "Graphics/DXDescriptorHeap.h"
 #include "Graphics/DXPipeline.h"
 #include "Graphics/Camera.h"
 #include "Graphics/DXAccess.h"
 #include "Graphics/Model.h"
+
+#include <d3dx12.h>
+#include <imgui_impl_dx12.h>
 
 // TODO: Replace with Scene Reference 
 SceneStage::SceneStage(Window* window, Camera* camera, std::vector<Model*>& models, 
@@ -17,23 +19,39 @@ SceneStage::SceneStage(Window* window, Camera* camera, std::vector<Model*>& mode
 
 void SceneStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 {
-	// 0. Grab all relevant objects //
+	// 0. Grab all relevant objects to perform stage //
 	DXDescriptorHeap* CBVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	DXDescriptorHeap* DSVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+	ComPtr<ID3D12Resource> renderBuffer = window->GetCurrentRenderBuffer();
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = DSVHeap->GetCPUHandleAt(0);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE renderRTV = window->GetCurrentRenderRTV();
 	CD3DX12_GPU_DESCRIPTOR_HANDLE lightData = CBVHeap->GetGPUHandleAt(lightDataCBVIndex);
 
-	// 1. Bind pipeline & root //
+	// 1. Transition Render (Texture) to Render Target, afterwards bind target //
+	TransitionResource(renderBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	BindAndClearRenderTarget(window, &renderRTV, &depthView);
+
+	// 2. Bind pipeline & root //
 	commandList->SetGraphicsRootSignature(rootSignature->GetAddress());
 	commandList->SetPipelineState(pipeline->GetAddress());
 
-	// 2. Bind root arguments  //
+	// 3. Bind root arguments  //
 	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->Position, 0);
 	commandList->SetGraphicsRootDescriptorTable(2, lightData);
 
-	// 5. Draw Calls & Bind MVPs ( happens in Model.cpp ) // 
+	// 4. Draw Calls & Bind MVPs ( happens in Model.cpp ) // 
 	for(Model* model : models)
 	{
 		model->Draw(camera->GetViewProjectionMatrix());
 	}
+
+	// 5. Draw UI/Editor //
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
+
+	// 6. Prepare Render Target to be used as Render Texture //
+	TransitionResource(renderBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
 void SceneStage::CreatePipeline()
