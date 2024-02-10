@@ -41,12 +41,15 @@ void Camera::UpdateViewMatrix()
 	const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	view = glm::lookAt(Position, Position + front, up);
+	viewProjection = projection * view;
 }
 
 void Camera::ResizeProjectionMatrix(int windowWidth, int windowHeight)
 {
 	aspectRatio = float(windowWidth) / float(windowHeight);
 	projection = glm::perspective(glm::radians(FOV), aspectRatio, nearClip, farClip);
+
+	viewProjection = projection * view;
 }
 
 const glm::vec3& Camera::GetForwardVector()
@@ -56,7 +59,6 @@ const glm::vec3& Camera::GetForwardVector()
 
 const glm::mat4& Camera::GetViewProjectionMatrix()
 {
-	viewProjection = projection * view;
 	return viewProjection;
 }
 

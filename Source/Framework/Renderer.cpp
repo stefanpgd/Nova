@@ -18,7 +18,9 @@
 #include "Graphics/Texture.h"
 
 // Render Stages //
+#include "Graphics/RenderStages/SceneStage.h"
 #include "Graphics/RenderStages/ScreenStage.h"
+#include "Graphics/RenderStages/SkydomeStage.h"
 
 #include <cassert>
 #include <imgui.h>
@@ -39,16 +41,8 @@ namespace RendererInternal
 }
 using namespace RendererInternal;
 
-// TODO: Make own class?
-Texture* skydome;
+// TODO: Move to window
 Texture* screenBackBuffer[Window::BackBufferCount];
-Model* skydomeModel;
-Mesh* skyMesh;
-
-DXRootSignature* skyRoot;
-DXPipeline* skyPipeline;
-
-ScreenStage* screenStage;
 
 Renderer::Renderer(const std::wstring& applicationName)
 {
@@ -70,29 +64,12 @@ Renderer::Renderer(const std::wstring& applicationName)
 	InitializeImGui();
 
 	// Pipeline // 
-	CD3DX12_DESCRIPTOR_RANGE1 cbvRanges[1]; // placeholder cause there is no guarantee they are next too each other...
-	cbvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 1); // Lighting buffer
 
-	CD3DX12_DESCRIPTOR_RANGE1 srvRanges[1];
-	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // Render Target as Texture
-
-	CD3DX12_DESCRIPTOR_RANGE1 skydomeRange[1];
-	skydomeRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
-
-	CD3DX12_ROOT_PARAMETER1 rootParameters[5];
-	rootParameters[0].InitAsConstants(32, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); // MVP & Model
-	rootParameters[1].InitAsConstants(3, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX); // Scene info ( Camera... etc. ) 
-	rootParameters[2].InitAsDescriptorTable(1, &cbvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Lighting data
-	rootParameters[3].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
-	rootParameters[4].InitAsDescriptorTable(1, &skydomeRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // Testing 
 
 	// TODO: Maybe do a countof or something so you know how many are inside of the rootParameters...
-	rootSignature = new DXRootSignature(rootParameters, _countof(rootParameters), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature);
+
 
 	UpdateLightBuffer();
-
-	skydome = new Texture("Assets/HDRI/testDome.hdr");
 
 	int bufferSize = window->GetWindowWidth() * window->GetWindowHeight() * 4;
 	unsigned char* buffer = new unsigned char[bufferSize];
@@ -116,18 +93,9 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	delete[] buffer;
 
-	skydomeModel = new Model("Assets/Models/Skydome/skydome.gltf");
-	skyMesh = skydomeModel->GetMesh(0);
-
-
-	CD3DX12_ROOT_PARAMETER1 skyRootParams[2];
-	skyRootParams[0].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL);
-	skyRootParams[1].InitAsConstants(3, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-
-	skyRoot = new DXRootSignature(skyRootParams, _countof(skyRootParams), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-	skyPipeline = new DXPipeline("Source/Shaders/skydome.vertex.hlsl", "Source/Shaders/skydome.pixel.hlsl", skyRoot);
-
+	sceneStage = new SceneStage(window, camera, models, &lights, lightCBVIndex);
 	screenStage = new ScreenStage(window);
+	skydomeStage = new SkydomeStage(window, camera);
 }
 
 // TODO: move light out of Update into Editor
@@ -189,34 +157,14 @@ void Renderer::Render()
 	TransitionResource(testBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE testTarget = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV)->GetCPUHandleAt(backBufferIndex + 3);
 
-	// 2. Clear Screen & Depth Buffer //
-	float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	commandList->ClearRenderTargetView(testTarget, clearColor, 0, nullptr);
-	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
 	// 3. Setup Information for the Pipeline //
 	commandList->SetDescriptorHeaps(1, heaps);
-	commandList->SetGraphicsRootSignature(rootSignature->GetAddress());
-	commandList->SetPipelineState(pipeline->GetAddress());
-
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList->RSSetViewports(1, &window->GetViewport());
-	commandList->RSSetScissorRects(1, &window->GetScissorRect());
-	commandList->OMSetRenderTargets(1, &testTarget, FALSE, &dsv);
 
-	// 4. Set the root arguments // 
-	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->Position, 0);
-	commandList->SetGraphicsRootDescriptorTable(2, lightData);
+	// TODO: Move to Bind And Clear??
+	BindAndClearRenderTarget(window, &testTarget, &dsv);
 
-	// Placeholder: Set SRV individual? // 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE skydomeData = CBVHeap->GetGPUHandleAt(skydome->GetSRVIndex());
-	commandList->SetGraphicsRootDescriptorTable(4, skydomeData);
-
-	// 5. Draw Calls & Bind MVPs ( happens in Model.cpp ) // 
-	for(Model* model : models)
-	{
-		model->Draw(camera->GetViewProjectionMatrix());
-	}
+	sceneStage->RecordStage(commandList);
 
 	// 6. Apply draw data from UI / ImGui //
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
@@ -228,25 +176,9 @@ void Renderer::Render()
 	ComPtr<ID3D12Resource> backBuffer = window->GetCurrentBackBuffer();
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-	commandList->ClearRenderTargetView(renderTarget, clearColor, 0, nullptr);
-	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	BindAndClearRenderTarget(window, &renderTarget, &dsv);
 
-	commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &dsv);
-
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList->RSSetViewports(1, &window->GetViewport());
-	commandList->RSSetScissorRects(1, &window->GetScissorRect());
-
-	commandList->SetGraphicsRootSignature(skyRoot->GetAddress());
-	commandList->SetPipelineState(skyPipeline->GetAddress());
-
-	// Placeholder: Set SRV individual? // 
-	commandList->SetGraphicsRootDescriptorTable(0, skydomeData);
-	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->GetForwardVector(), 0);
-
-	commandList->IASetVertexBuffers(0, 1, &skyMesh->GetVertexBufferView());
-	commandList->IASetIndexBuffer(&skyMesh->GetIndexBufferView());
-	commandList->DrawIndexedInstanced(skyMesh->GetIndicesCount(), 1, 0, 0, 0);
+	skydomeStage->RecordStage(commandList);
 
 	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
@@ -255,7 +187,7 @@ void Renderer::Render()
 
 	screenStage->PlaceHolderFunction(screenTextureData);
 	screenStage->RecordStage(commandList);
-	
+
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
 	directCommands->ExecuteCommandList(backBufferIndex);

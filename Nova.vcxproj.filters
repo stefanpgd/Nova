@@ -96,6 +96,9 @@
     <ClCompile Include="Source\Graphics\RenderStages\SkydomeStage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Graphics\RenderStages\SceneStage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Dependencies\Microsoft\d3dcompiler_47.dll" />
@@ -192,6 +195,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Headers\Graphics\RenderStages\SkydomeStage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\Graphics\RenderStages\SceneStage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

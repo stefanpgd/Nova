@@ -14,6 +14,7 @@
 #include "Graphics/DXAccess.h"
 #include "Graphics/DXCommands.h"
 #include "Graphics/DXDescriptorHeap.h"
+#include "Window.h"
 
 inline void ThrowIfFailed(HRESULT hr)
 {
@@ -151,4 +152,34 @@ inline void UpdateInFlightCBV(ID3D12Resource* destinationResource, unsigned int 
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE handle = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)->GetCPUHandleAt(CBVIndex);
 	device->CreateConstantBufferView(&desc, handle);
+}
+
+/// <summary>
+/// First clears the passed Render Target & DepthStencil buffer
+/// Depth Stencil only gets cleared when its passed along
+/// </summary>
+inline void BindAndClearRenderTarget(Window* window, CD3DX12_CPU_DESCRIPTOR_HANDLE* renderTarget, CD3DX12_CPU_DESCRIPTOR_HANDLE* depthStencil = nullptr, float* clearColor = nullptr)
+{
+	DXCommands* directCommands = DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT);
+	ComPtr<ID3D12GraphicsCommandList2> commandList = directCommands->GetGraphicsCommandList();
+	const float defaultClearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+	if(clearColor)
+	{
+		commandList->ClearRenderTargetView(*renderTarget, clearColor, 0, nullptr);
+	}
+	else
+	{
+		commandList->ClearRenderTargetView(*renderTarget, defaultClearColor, 0, nullptr);
+	}
+	
+
+	if(depthStencil != nullptr)
+	{
+		commandList->ClearDepthStencilView(*depthStencil, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	}
+
+	commandList->OMSetRenderTargets(1, renderTarget, FALSE, depthStencil);
+	commandList->RSSetViewports(1, &window->GetViewport());
+	commandList->RSSetScissorRects(1, &window->GetScissorRect());
 }

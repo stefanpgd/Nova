@@ -5,6 +5,8 @@
 using namespace Microsoft::WRL;
 
 class Window;
+class DXPipeline;
+class DXRootSignature;
 
 /// <summary>
 /// The purpose of the RenderStage is to be able to encapsulate
@@ -20,5 +22,8 @@ public:
 	virtual void RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList) = 0;
 
 protected:
+	DXPipeline* pipeline;
+	DXRootSignature* rootSignature;
+
 	Window* window;
 };

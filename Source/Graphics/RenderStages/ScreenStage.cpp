@@ -23,8 +23,8 @@ void ScreenStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV)->GetCPUHandleAt(0);
 
 	// 1. Bind pipeline & root // 
-	commandList->SetGraphicsRootSignature(screenRootSignature->GetAddress());
-	commandList->SetPipelineState(screenPipeline->GetAddress());
+	commandList->SetGraphicsRootSignature(rootSignature->GetAddress());
+	commandList->SetPipelineState(pipeline->GetAddress());
 
 	// 2. Clear depth buffer to be (re-)used //
 	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
@@ -47,10 +47,10 @@ void ScreenStage::CreatePipeline()
 	CD3DX12_ROOT_PARAMETER1 screenRootParameters[1];
 	screenRootParameters[0].InitAsDescriptorTable(1, &screenRange[0], D3D12_SHADER_VISIBILITY_PIXEL);
 
-	screenRootSignature = new DXRootSignature(screenRootParameters, _countof(screenRootParameters), 
+	rootSignature = new DXRootSignature(screenRootParameters, _countof(screenRootParameters),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-	screenPipeline = new DXPipeline("Source/Shaders/screen.vertex.hlsl", "Source/Shaders/screen.pixel.hlsl", screenRootSignature);
+	pipeline = new DXPipeline("Source/Shaders/screen.vertex.hlsl", "Source/Shaders/screen.pixel.hlsl", rootSignature);
 }
 
 void ScreenStage::CreateScreenMesh()
