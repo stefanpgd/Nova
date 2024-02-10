@@ -17,6 +17,9 @@
 #include "Graphics/Camera.h"
 #include "Graphics/Texture.h"
 
+// Render Stages //
+#include "Graphics/RenderStages/ScreenStage.h"
+
 #include <cassert>
 #include <imgui.h>
 #include <imgui_impl_win32.h>
@@ -38,15 +41,14 @@ using namespace RendererInternal;
 
 // TODO: Make own class?
 Texture* skydome;
-DXPipeline* screenPipeline;
-DXRootSignature* screenRootSig;
 Texture* screenBackBuffer[Window::BackBufferCount];
-Mesh* screenMesh;
 Model* skydomeModel;
 Mesh* skyMesh;
 
 DXRootSignature* skyRoot;
 DXPipeline* skyPipeline;
+
+ScreenStage* screenStage;
 
 Renderer::Renderer(const std::wstring& applicationName)
 {
@@ -72,7 +74,7 @@ Renderer::Renderer(const std::wstring& applicationName)
 	cbvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 1); // Lighting buffer
 
 	CD3DX12_DESCRIPTOR_RANGE1 srvRanges[1];
-	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); 
+	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // Render Target as Texture
 
 	CD3DX12_DESCRIPTOR_RANGE1 skydomeRange[1];
 	skydomeRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
@@ -114,29 +116,6 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	delete[] buffer;
 
-	Vertex* screenVertices = new Vertex[4];
-	screenVertices[0].Position = glm::vec3(-1.0f, -1.0f, 0.0f);
-	screenVertices[1].Position = glm::vec3(-1.0f, 1.0f, 0.0f);
-	screenVertices[2].Position = glm::vec3(1.0f, 1.0f, 0.0f);
-	screenVertices[3].Position = glm::vec3(1.0f, -1.0f, 0.0f);
-
-	screenVertices[0].TexCoord = glm::vec2(0.0f, 1.0f);
-	screenVertices[1].TexCoord = glm::vec2(0.0f, 0.0f);
-	screenVertices[2].TexCoord = glm::vec2(1.0f, 0.0f);
-	screenVertices[3].TexCoord = glm::vec2(1.0f, 1.0f);
-
-	unsigned int* screenIndices = new unsigned int[6]
-		{	2, 1, 0, 3, 2, 0 };
-
-	screenMesh = new Mesh(screenVertices, 4, screenIndices, 6);
-
-
-	CD3DX12_ROOT_PARAMETER1 screenRoot[1];
-	screenRoot[0].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); 
-
-	screenRootSig = new DXRootSignature(screenRoot, _countof(screenRoot), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-	screenPipeline = new DXPipeline("Source/Shaders/screen.vertex.hlsl", "Source/Shaders/screen.pixel.hlsl", screenRootSig);
-
 	skydomeModel = new Model("Assets/Models/Skydome/skydome.gltf");
 	skyMesh = skydomeModel->GetMesh(0);
 
@@ -147,6 +126,8 @@ Renderer::Renderer(const std::wstring& applicationName)
 
 	skyRoot = new DXRootSignature(skyRootParams, _countof(skyRootParams), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	skyPipeline = new DXPipeline("Source/Shaders/skydome.vertex.hlsl", "Source/Shaders/skydome.pixel.hlsl", skyRoot);
+
+	screenStage = new ScreenStage(window);
 }
 
 // TODO: move light out of Update into Editor
@@ -269,16 +250,11 @@ void Renderer::Render()
 
 	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	commandList->SetGraphicsRootSignature(screenRootSig->GetAddress());
-	commandList->SetPipelineState(screenPipeline->GetAddress());
-
 	// Placeholder: Set SRV individual? // 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE screenTextureData = CBVHeap->GetGPUHandleAt(screenBackBuffer[backBufferIndex]->GetSRVIndex());
 
-	commandList->SetGraphicsRootDescriptorTable(0, screenTextureData);
-	commandList->IASetVertexBuffers(0, 1, &screenMesh->GetVertexBufferView());
-	commandList->IASetIndexBuffer(&screenMesh->GetIndexBufferView());
-	commandList->DrawIndexedInstanced(screenMesh->GetIndicesCount(), 1, 0, 0, 0);
+	screenStage->PlaceHolderFunction(screenTextureData);
+	screenStage->RecordStage(commandList);
 	
 	TransitionResource(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 

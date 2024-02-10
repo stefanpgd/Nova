@@ -145,6 +145,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Graphics\RenderStages\SkydomeStage.cpp" />
+    <ClCompile Include="Source\Graphics\RenderStages\ScreenStage.cpp" />
+    <ClCompile Include="Source\Graphics\RenderStage.cpp" />
     <ClCompile Include="Source\Framework\Input.cpp" />
     <ClCompile Include="Source\Graphics\Camera.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui.cpp" />
@@ -197,6 +200,7 @@
     <ClInclude Include="Headers\Framework\Engine.h" />
     <ClInclude Include="Headers\Graphics\DXUtilities.h" />
     <ClInclude Include="Headers\Graphics\Lights.h" />
+    <ClInclude Include="Headers\Graphics\RenderStage.h" />
     <ClInclude Include="Headers\Utilities\Logger.h" />
     <ClInclude Include="Headers\Framework\Renderer.h" />
     <ClInclude Include="Headers\Graphics\Window.h" />
@@ -206,6 +210,8 @@
     <ClInclude Include="Headers\Framework\Input.h" />
     <ClInclude Include="Headers\Framework\Mathematics.h" />
     <ClInclude Include="Headers\Graphics\Texture.h" />
+    <ClInclude Include="Headers\Graphics\RenderStages\ScreenStage.h" />
+    <ClInclude Include="Headers\Graphics\RenderStages\SkydomeStage.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Source\Shaders\default.vertex.hlsl">
