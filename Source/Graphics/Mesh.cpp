@@ -183,7 +183,6 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 
 void Mesh::ApplyNodeTransform(const glm::mat4& transform)
 {
-	// TODO: Check if it can be optimized or something with GLM, or if vec3s work
 	for (Vertex& vertex : vertices)
 	{
 		glm::vec4 vert = glm::vec4(vertex.Position.x, vertex.Position.y, vertex.Position.z, 1.0f);

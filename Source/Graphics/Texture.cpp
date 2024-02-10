@@ -4,7 +4,6 @@
 #include <stb_image.h>
 
 // TODO: Learn about mipmapping with DX12 
-// TODO: Support texture loading through filepath
 Texture::Texture(tinygltf::Model& model, tinygltf::Texture& texture)
 {
 	tinygltf::Image& image = model.images[texture.source];

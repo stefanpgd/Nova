@@ -67,41 +67,9 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 	skydomeStage = new SkydomeStage(window, scene);
 }
 
-// TODO: move light out of Update into Editor
-void Renderer::Update(float deltaTime)
-{
-	//ImGui::Begin("Lights");
-	//
-	//if(ImGui::Button("Add Light"))
-	//{
-	//	if(lights.activePointLights < MAX_AMOUNT_OF_LIGHTS)
-	//	{
-	//		lights.activePointLights++;
-	//		UpdateLightBuffer();
-	//	}
-	//	else
-	//	{
-	//		LOG(Log::MessageType::Debug, "You are already at the limit of lights")
-	//	}
-	//}
-	//
-	//for(int i = 0; i < lights.activePointLights; i++)
-	//{
-	//	ImGui::PushID(i);
-	//
-	//	PointLight& pointLight = lights.pointLights[i];
-	//
-	//	std::string name = "Light - " + std::to_string(i);
-	//	ImGui::SeparatorText(name.c_str());
-	//
-	//	if(ImGui::DragFloat3("Position", &pointLight.Position[0], 0.01f)) { UpdateLightBuffer(); }
-	//	if(ImGui::ColorEdit3("Color", &pointLight.Color[0])) { UpdateLightBuffer(); }
-	//	if(ImGui::DragFloat("Intensity", &pointLight.Intensity, 0.05f, 0.0f, 1000.0f)) { UpdateLightBuffer(); }
-	//
-	//	ImGui::PopID();
-	//}
-	//
-	//ImGui::End();
+void Renderer::Update(float deltaTime) 
+{ 
+	// TODO: Maybe record render times in here, have a proper MS count etc.
 }
 
 void Renderer::Render()
@@ -137,7 +105,6 @@ void Renderer::SetScene(Scene* newScene)
 void Renderer::Resize()
 {
 	directCommands->Flush();
-
 	window->Resize();
 	scene->GetCamera().ResizeProjectionMatrix(window->GetWindowWidth(), window->GetWindowHeight());
 }

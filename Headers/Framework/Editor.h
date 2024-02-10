@@ -20,8 +20,10 @@ private:
 	// Editor Windows //
 	void ModelSelectionWindow();
 	void StatisticsWindow();
+	void LightsWindow();
 
-	// TODO: Replace with selection window 
+	// TODO: Replace scroll-down structure with a Drop-Down 
+	// select mode like Unity/Unreal
 	void TransformWindow();
 
 	void LoadModelFilePaths(std::string path, std::string originalPath);

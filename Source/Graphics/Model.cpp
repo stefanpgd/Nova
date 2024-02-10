@@ -7,7 +7,6 @@
 #include "Utilities/Logger.h"
 
 // TODO: Models still need to be saved in a database/library
-// TODO: Verify if models properly get freed 
 Model::Model(const std::string& filePath)
 {
 	tinygltf::Model model;

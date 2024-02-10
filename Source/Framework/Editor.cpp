@@ -23,6 +23,7 @@ void Editor::Update(float deltaTime)
 	ModelSelectionWindow();
 	StatisticsWindow();
 	TransformWindow();
+	LightsWindow();
 }
 
 void Editor::SetScene(Scene* newScene)
@@ -68,6 +69,42 @@ void Editor::StatisticsWindow()
 	ImGui::SeparatorText("Stats");
 
 	ImGui::Text("FPS: %i", int(1.0f / deltaTime));
+	ImGui::End();
+}
+
+void Editor::LightsWindow()
+{
+	ImGui::Begin("Lights");
+
+	if(ImGui::Button("Add Light"))
+	{
+		if(scene->lights.activePointLights < MAX_AMOUNT_OF_LIGHTS)
+		{
+			scene->lights.activePointLights++;
+			scene->lightsEdited = true;
+		}
+		else
+		{
+			LOG(Log::MessageType::Debug, "You are already at the limit of lights")
+		}
+	}
+
+	for(int i = 0; i < scene->lights.activePointLights; i++)
+	{
+		ImGui::PushID(i);
+
+		PointLight& pointLight = scene->lights.pointLights[i];
+
+		std::string name = "Light - " + std::to_string(i);
+		ImGui::SeparatorText(name.c_str());
+
+		if(ImGui::DragFloat3("Position", &pointLight.Position[0], 0.01f)) { scene->lightsEdited = true; }
+		if(ImGui::ColorEdit3("Color", &pointLight.Color[0])) { scene->lightsEdited = true; }
+		if(ImGui::DragFloat("Intensity", &pointLight.Intensity, 0.05f, 0.0f, 1000.0f)) { scene->lightsEdited = true; }
+
+		ImGui::PopID();
+	}
+
 	ImGui::End();
 }
 

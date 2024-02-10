@@ -13,8 +13,6 @@ class SceneStage;
 class ScreenStage;
 class SkydomeStage;
 
-// TODO: For now window size stuff is handled in Renderer
-// in the future move it with serialization to Engine.
 class Renderer
 {
 public:
