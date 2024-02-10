@@ -6,8 +6,9 @@
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
 
-class Renderer;
+class Scene;
 class Editor;
+class Renderer;
 
 class Engine
 {
@@ -28,12 +29,20 @@ private:
 private:
 	bool runApplication = true;
 	std::wstring applicationName;
-	Renderer* renderer;
+
+	// Framework Components //
+	Scene* activeScene;
 	Editor* editor;
+	Renderer* renderer;
 
 	// Time //
 	float deltaTime = 1.0f;
 	std::chrono::high_resolution_clock* clock;
 	std::chrono::milliseconds t0;
+
+	// TODO: In the future serialize window data
+	// Window //
+	unsigned int windowWidth = 1080;
+	unsigned int windowHeight = 720;
 };
 

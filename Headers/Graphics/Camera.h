@@ -4,6 +4,7 @@
 class Camera
 {
 public: 
+	Camera();
 	Camera(int windowWidth, int windowHeight);
 
 	void Update(float deltaTime);

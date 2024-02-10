@@ -1,12 +1,13 @@
 #include "Framework/Editor.h"
-#include "Framework/Renderer.h"
+#include "Framework/Scene.h"
+
 #include "Utilities/Logger.h"
 #include "Graphics/Model.h"
 
 #include <imgui.h>
 #include <filesystem>
 
-Editor::Editor(Renderer* renderer) : renderer(renderer)
+Editor::Editor(Scene* scene) : scene(scene)
 {
 	ImGuiStyleSettings();
 	LoadModelFilePaths("Assets/Models/", "Assets/Models/");
@@ -22,6 +23,11 @@ void Editor::Update(float deltaTime)
 	ModelSelectionWindow();
 	StatisticsWindow();
 	TransformWindow();
+}
+
+void Editor::SetScene(Scene* newScene)
+{
+	scene = newScene;
 }
 
 void Editor::ModelSelectionWindow()
@@ -50,7 +56,7 @@ void Editor::ModelSelectionWindow()
 
 	if(ImGui::Button("Load Model"))
 	{
-		renderer->AddModel(modelFilePaths[currentModelID]);
+		scene->AddModel(modelFilePaths[currentModelID]);
 	}
 
 	ImGui::End();
@@ -69,9 +75,9 @@ void Editor::TransformWindow()
 {
 	ImGui::Begin("Transforms");
 
-	for(int i = 0; i < renderer->models.size(); i++)
+	for(int i = 0; i < scene->models.size(); i++)
 	{
-		Model* model = renderer->models[i];
+		Model* model = scene->models[i];
 
 		ImGui::SeparatorText(model->Name.c_str());
 

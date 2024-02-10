@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-class Renderer;
+class Scene;
 
 // TODO: In the future, if we get many more windows
 // make an interface for an editor Window, then loop over
@@ -11,9 +11,10 @@ class Renderer;
 class Editor
 {
 public:
-	Editor(Renderer* renderer);
+	Editor(Scene* scene);
 
 	void Update(float deltaTime);
+	void SetScene(Scene* newScene);
 
 private:
 	// Editor Windows //
@@ -28,7 +29,7 @@ private:
 
 private:
 	float deltaTime;
-	Renderer* renderer;
+	Scene* scene;
 
 	// ImGui Editor //
 	struct ImFont* baseFont;

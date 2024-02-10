@@ -3,26 +3,19 @@
 
 #include <vector>
 
-class Model;
-struct LightData;
-class Camera;
+class Scene;
 
-// TODO: replace pointers with something more safe 
 class SceneStage : public RenderStage
 {
 public:
-	SceneStage(Window* window, Camera* camera, 
-		std::vector<Model*>& models, LightData* lights, int lightCBVIndex);
+	SceneStage(Window* window, Scene* scene);
 
 	void RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList) override;
+	void SetScene(Scene* newScene);
 
 private:
 	void CreatePipeline();
 
 private:
-	std::vector<Model*>& models;
-	LightData* lights;
-	Camera* camera;
-
-	const int lightDataCBVIndex;
+	Scene* scene;
 };

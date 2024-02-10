@@ -1,4 +1,5 @@
 #include "Framework/Renderer.h"
+#include "Framework/Scene.h"
 
 #include "Utilities/Logger.h"
 
@@ -42,7 +43,8 @@ namespace RendererInternal
 }
 using namespace RendererInternal;
 
-Renderer::Renderer(const std::wstring& applicationName)
+Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned int windowWidth, 
+	unsigned int windowHeight) : scene(scene)
 {
 	// Initialization for all vital components for rendering //
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -56,56 +58,50 @@ Renderer::Renderer(const std::wstring& applicationName)
 	directCommands = new DXCommands(D3D12_COMMAND_LIST_TYPE_DIRECT, Window::BackBufferCount);
 	copyCommands = new DXCommands(D3D12_COMMAND_LIST_TYPE_DIRECT, 1);
 
-	window = new Window(applicationName, width, height);
-	camera = new Camera(width, height);
+	window = new Window(applicationName, windowWidth, windowHeight);
 
 	InitializeImGui();
-	UpdateLightBuffer();
 
-	sceneStage = new SceneStage(window, camera, models, &lights, lightCBVIndex);
+	sceneStage = new SceneStage(window, scene);
 	screenStage = new ScreenStage(window);
-	skydomeStage = new SkydomeStage(window, camera);
+	skydomeStage = new SkydomeStage(window, scene);
 }
 
 // TODO: move light out of Update into Editor
 void Renderer::Update(float deltaTime)
 {
-	elaspedTime += deltaTime;
-
-	camera->Update(deltaTime);
-
-	ImGui::Begin("Lights");
-
-	if(ImGui::Button("Add Light"))
-	{
-		if(lights.activePointLights < MAX_AMOUNT_OF_LIGHTS)
-		{
-			lights.activePointLights++;
-			UpdateLightBuffer();
-		}
-		else
-		{
-			LOG(Log::MessageType::Debug, "You are already at the limit of lights")
-		}
-	}
-
-	for(int i = 0; i < lights.activePointLights; i++)
-	{
-		ImGui::PushID(i);
-
-		PointLight& pointLight = lights.pointLights[i];
-
-		std::string name = "Light - " + std::to_string(i);
-		ImGui::SeparatorText(name.c_str());
-
-		if(ImGui::DragFloat3("Position", &pointLight.Position[0], 0.01f)) { UpdateLightBuffer(); }
-		if(ImGui::ColorEdit3("Color", &pointLight.Color[0])) { UpdateLightBuffer(); }
-		if(ImGui::DragFloat("Intensity", &pointLight.Intensity, 0.05f, 0.0f, 1000.0f)) { UpdateLightBuffer(); }
-
-		ImGui::PopID();
-	}
-
-	ImGui::End();
+	//ImGui::Begin("Lights");
+	//
+	//if(ImGui::Button("Add Light"))
+	//{
+	//	if(lights.activePointLights < MAX_AMOUNT_OF_LIGHTS)
+	//	{
+	//		lights.activePointLights++;
+	//		UpdateLightBuffer();
+	//	}
+	//	else
+	//	{
+	//		LOG(Log::MessageType::Debug, "You are already at the limit of lights")
+	//	}
+	//}
+	//
+	//for(int i = 0; i < lights.activePointLights; i++)
+	//{
+	//	ImGui::PushID(i);
+	//
+	//	PointLight& pointLight = lights.pointLights[i];
+	//
+	//	std::string name = "Light - " + std::to_string(i);
+	//	ImGui::SeparatorText(name.c_str());
+	//
+	//	if(ImGui::DragFloat3("Position", &pointLight.Position[0], 0.01f)) { UpdateLightBuffer(); }
+	//	if(ImGui::ColorEdit3("Color", &pointLight.Color[0])) { UpdateLightBuffer(); }
+	//	if(ImGui::DragFloat("Intensity", &pointLight.Intensity, 0.05f, 0.0f, 1000.0f)) { UpdateLightBuffer(); }
+	//
+	//	ImGui::PopID();
+	//}
+	//
+	//ImGui::End();
 }
 
 void Renderer::Render()
@@ -133,17 +129,17 @@ void Renderer::Render()
 	directCommands->WaitForFenceValue(window->GetCurrentBackBufferIndex());
 }
 
+void Renderer::SetScene(Scene* newScene)
+{
+	scene = newScene;
+}
+
 void Renderer::Resize()
 {
 	directCommands->Flush();
 
 	window->Resize();
-	camera->ResizeProjectionMatrix(window->GetWindowWidth(), window->GetWindowHeight());
-}
-
-void Renderer::AddModel(const std::string& filePath)
-{
-	models.push_back(new Model(filePath));
+	scene->GetCamera().ResizeProjectionMatrix(window->GetWindowWidth(), window->GetWindowHeight());
 }
 
 void Renderer::InitializeImGui()
@@ -159,16 +155,6 @@ void Renderer::InitializeImGui()
 	const unsigned int cbvIndex = CBVHeap->GetNextAvailableIndex();
 	ImGui_ImplDX12_Init(device->GetAddress(), Window::BackBufferCount, DXGI_FORMAT_R8G8B8A8_UNORM,
 		CBVHeap->GetAddress(), CBVHeap->GetCPUHandleAt(cbvIndex), CBVHeap->GetGPUHandleAt(cbvIndex));
-}
-
-void Renderer::UpdateLightBuffer()
-{
-	if(lightCBVIndex < 0)
-	{
-		lightCBVIndex = CBVHeap->GetNextAvailableIndex();
-	}
-
-	UpdateInFlightCBV(lightBuffer.Get(), lightCBVIndex, 1, sizeof(LightData), &lights);
 }
 
 #pragma region DXAccess Implementations

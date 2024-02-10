@@ -1,6 +1,7 @@
 #include "Framework/Engine.h"
 #include "Framework/Renderer.h"
 #include "Framework/Editor.h"
+#include "Framework/Scene.h"
 #include "Framework/Input.h"
 #include "Utilities/Logger.h"
 
@@ -22,8 +23,10 @@ using namespace EngineInternal;
 Engine::Engine(const std::wstring& applicationName) : applicationName(applicationName)
 {
 	RegisterWindowClass();
-	renderer = new Renderer(this->applicationName);
-	editor = new Editor(renderer);
+
+	activeScene = new Scene(windowWidth, windowHeight);
+	renderer = new Renderer(this->applicationName, activeScene, windowWidth, windowHeight);
+	editor = new Editor(activeScene);
 
 	clock = new std::chrono::high_resolution_clock();
 	t0 = std::chrono::time_point_cast<std::chrono::milliseconds>((clock->now())).time_since_epoch();
@@ -76,6 +79,7 @@ void Engine::Update()
 #endif
 
 	editor->Update(deltaTime);
+	activeScene->Update(deltaTime);
 	renderer->Update(deltaTime);
 }
 

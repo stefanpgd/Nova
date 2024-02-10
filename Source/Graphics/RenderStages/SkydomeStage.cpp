@@ -1,5 +1,7 @@
 #include "Graphics/RenderStages/SkydomeStage.h"
 
+#include "Framework/Scene.h"
+
 #include "Graphics/Camera.h"
 #include "Graphics/Model.h"
 #include "Graphics/Mesh.h"
@@ -11,7 +13,7 @@
 
 #include <d3dx12.h>
 
-SkydomeStage::SkydomeStage(Window* window, Camera* camera) : RenderStage(window), camera(camera)
+SkydomeStage::SkydomeStage(Window* window, Scene* scene) : RenderStage(window), scene(scene)
 {
 	CreatePipeline();
 
@@ -31,6 +33,7 @@ void SkydomeStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 	CD3DX12_CPU_DESCRIPTOR_HANDLE screenRTV = window->GetCurrentScreenRTV();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = DSVHeap->GetCPUHandleAt(0);
 	CD3DX12_GPU_DESCRIPTOR_HANDLE skydomeData = CBVHeap->GetGPUHandleAt(skydomeTexture->GetSRVIndex());
+	Camera& camera = scene->GetCamera();
 
 	// 1. Prepare the screen buffer to be used as Render Target //
 	TransitionResource(screenBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -42,12 +45,17 @@ void SkydomeStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 
 	// 3. Bind skydome texture & Forward Vector //
 	commandList->SetGraphicsRootDescriptorTable(0, skydomeData);
-	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->GetForwardVector(), 0);
+	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera.GetForwardVector(), 0);
 
 	// 4. Render Skydome (mesh) //
 	commandList->IASetVertexBuffers(0, 1, &skydomeMesh->GetVertexBufferView());
 	commandList->IASetIndexBuffer(&skydomeMesh->GetIndexBufferView());
 	commandList->DrawIndexedInstanced(skydomeMesh->GetIndicesCount(), 1, 0, 0, 0);
+}
+
+void SkydomeStage::SetScene(Scene* newScene)
+{
+	scene = newScene;
 }
 
 void SkydomeStage::CreatePipeline()

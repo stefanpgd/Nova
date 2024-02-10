@@ -145,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Framework\Scene.cpp" />
     <ClCompile Include="Source\Graphics\RenderStages\SceneStage.cpp" />
     <ClCompile Include="Source\Graphics\RenderStages\SkydomeStage.cpp" />
     <ClCompile Include="Source\Graphics\RenderStages\ScreenStage.cpp" />
@@ -214,6 +215,7 @@
     <ClInclude Include="Headers\Graphics\RenderStages\ScreenStage.h" />
     <ClInclude Include="Headers\Graphics\RenderStages\SkydomeStage.h" />
     <ClInclude Include="Headers\Graphics\RenderStages\SceneStage.h" />
+    <ClInclude Include="Headers\Framework\Scene.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Source\Shaders\default.vertex.hlsl">

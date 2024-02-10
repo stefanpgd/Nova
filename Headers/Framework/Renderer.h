@@ -7,11 +7,7 @@ using namespace Microsoft::WRL;
 
 #include "Graphics/Lights.h"
 
-class DXRootSignature;
-class DXPipeline;
-
-class Camera;
-class Model;
+class Scene;
 
 class SceneStage;
 class ScreenStage;
@@ -22,18 +18,16 @@ class SkydomeStage;
 class Renderer
 {
 public:
-	Renderer(const std::wstring& applicationName);
+	Renderer(const std::wstring& applicationName, Scene* scene, unsigned int windowWidth, unsigned int windowHeight);
 
 	void Update(float deltaTime);
 	void Render();
 
+	void SetScene(Scene* newScene);
 	void Resize();
-	void AddModel(const std::string& filePath);
 
 private:
 	void InitializeImGui();
-
-	void UpdateLightBuffer();
 
 private:
 	// Rendering Stages //
@@ -41,19 +35,5 @@ private:
 	ScreenStage* screenStage;
 	SkydomeStage* skydomeStage;
 
-	// TODO: Maybe encapsulate scene data 
-	// ( Camera, Models, Lights... etc. )
-	// Also make it part of Framework instead of Graphics
-	Camera* camera; 
-	std::vector<Model*> models;
-
-	LightData lights;
-	ComPtr<ID3D12Resource> lightBuffer;
-	int lightCBVIndex = -1;
-
-	float elaspedTime = 0.0f;
-	unsigned int width = 1080;
-	unsigned int height = 720;
-
-	friend class Editor;
+	Scene* scene;
 };

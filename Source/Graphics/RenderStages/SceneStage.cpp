@@ -1,5 +1,7 @@
 #include "Graphics/RenderStages/SceneStage.h"
 
+#include "Framework/Scene.h"
+
 #include "Graphics/DXRootSignature.h"
 #include "Graphics/DXDescriptorHeap.h"
 #include "Graphics/DXPipeline.h"
@@ -10,9 +12,7 @@
 #include <d3dx12.h>
 #include <imgui_impl_dx12.h>
 
-// TODO: Replace with Scene Reference 
-SceneStage::SceneStage(Window* window, Camera* camera, std::vector<Model*>& models, 
-	LightData* lights, int lightCBVIndex) : RenderStage(window), camera(camera), models(models), lights(lights), lightDataCBVIndex(lightCBVIndex)
+SceneStage::SceneStage(Window* window, Scene* scene) : RenderStage(window), scene(scene)
 {
 	CreatePipeline();
 }
@@ -27,7 +27,7 @@ void SceneStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = DSVHeap->GetCPUHandleAt(0);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE renderRTV = window->GetCurrentRenderRTV();
-	CD3DX12_GPU_DESCRIPTOR_HANDLE lightData = CBVHeap->GetGPUHandleAt(lightDataCBVIndex);
+	Camera& camera = scene->GetCamera();
 
 	// 1. Transition Render (Texture) to Render Target, afterwards bind target //
 	TransitionResource(renderBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -38,13 +38,14 @@ void SceneStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 	commandList->SetPipelineState(pipeline->GetAddress());
 
 	// 3. Bind root arguments  //
-	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera->Position, 0);
-	commandList->SetGraphicsRootDescriptorTable(2, lightData);
+	commandList->SetGraphicsRoot32BitConstants(1, 3, &camera.Position, 0);
+	commandList->SetGraphicsRootDescriptorTable(2, scene->GetLightBufferHandle());
 
 	// 4. Draw Calls & Bind MVPs ( happens in Model.cpp ) // 
-	for(Model* model : models)
+
+	for(Model* model : scene->GetModels())
 	{
-		model->Draw(camera->GetViewProjectionMatrix());
+		model->Draw(camera.GetViewProjectionMatrix());
 	}
 
 	// 5. Draw UI/Editor //
@@ -52,6 +53,11 @@ void SceneStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 
 	// 6. Prepare Render Target to be used as Render Texture //
 	TransitionResource(renderBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+}
+
+void SceneStage::SetScene(Scene* newScene)
+{
+	scene = newScene;
 }
 
 void SceneStage::CreatePipeline()

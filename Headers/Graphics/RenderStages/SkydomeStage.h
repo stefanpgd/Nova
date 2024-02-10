@@ -2,22 +2,23 @@
 
 #include "Graphics/RenderStage.h"
 
+class Scene;
 class Mesh;
-class Camera;
 class Texture;
 
 class SkydomeStage : public RenderStage
 {
 public:
-	SkydomeStage(Window* window, Camera* camera);
+	SkydomeStage(Window* window, Scene* scene);
 
 	void RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList) override;
+	void SetScene(Scene* newScene);
 
 private:
 	void CreatePipeline();
 
 private:
-	Camera* camera;
+	Scene* scene;
 	Texture* skydomeTexture;
 	Mesh* skydomeMesh;
 };
