@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/RenderStage.h"
+#include <glm.hpp>
 
 class Scene;
 class Mesh;
@@ -21,4 +22,6 @@ private:
 	Scene* scene;
 	Texture* skydomeTexture;
 	Mesh* skydomeMesh;
+
+	glm::mat4 skydomeMatrix;
 };

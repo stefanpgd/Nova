@@ -16,10 +16,17 @@ struct SceneInfo
 };
 ConstantBuffer<SceneInfo> Scene : register(b0);
 
+struct Transform
+{
+    matrix MVP;
+};
+ConstantBuffer<Transform> CameraTransform : register(b1);
+
 VertexOutput main(VertexPosColor IN)
 {
     VertexOutput OUT;
-    OUT.Position = float4(IN.Position, 0.5);
+    
+    OUT.Position = mul(CameraTransform.MVP, float4(IN.Position, 1.0f));
     
     float pi = 3.14159265;
     float3 dir = normalize(Scene.CameraFront);

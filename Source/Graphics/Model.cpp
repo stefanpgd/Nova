@@ -6,7 +6,7 @@
 #include "Framework/Mathematics.h"
 #include "Utilities/Logger.h"
 
-// TODO: Models still need to be saved in a database/library
+// TODO: Models still need to be saved in a database/library, Same story for textures
 Model::Model(const std::string& filePath)
 {
 	tinygltf::Model model;

@@ -13,6 +13,7 @@ public:
 	void ResizeProjectionMatrix(int windowWidth, int windowHeight);
 
 	const glm::vec3& GetForwardVector();
+	const glm::vec3& GetUpwardVector();
 
 	const glm::mat4& GetViewMatrix();
 	const glm::mat4& GetProjectionMatrix();
@@ -26,11 +27,10 @@ private:
 	glm::mat4 projection;
 	glm::mat4 viewProjection; // stored locally for data copying
 
-	// placeholder till we've look around.
-	// Mainly used to test some stuff in shaders atm
 	glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
-	float FOV = 60.0f;
+	float FOV = 55.0f;
 	float nearClip = 0.01f;
 	float farClip = 1000.0f;
 	float aspectRatio;

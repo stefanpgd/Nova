@@ -38,8 +38,6 @@ void Camera::Update(float deltaTime)
 
 void Camera::UpdateViewMatrix()
 {
-	const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-
 	view = glm::lookAt(Position, Position + front, up);
 	viewProjection = projection * view;
 }
@@ -55,6 +53,11 @@ void Camera::ResizeProjectionMatrix(int windowWidth, int windowHeight)
 const glm::vec3& Camera::GetForwardVector()
 {
 	return front;
+}
+
+const glm::vec3& Camera::GetUpwardVector()
+{
+	return up;
 }
 
 const glm::mat4& Camera::GetViewProjectionMatrix()
