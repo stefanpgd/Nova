@@ -11,6 +11,7 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, glm::mat4& tr
 	// to render the model
 	LoadAttribute(model, primitive, "POSITION");
 	LoadAttribute(model, primitive, "NORMAL");
+	LoadAttribute(model, primitive, "TANGENT");
 	LoadAttribute(model, primitive, "TEXCOORD_0");
 
 	LoadMaterial(model, primitive);
@@ -115,6 +116,10 @@ void Mesh::LoadAttribute(tinygltf::Model& model, tinygltf::Primitive& primitive,
 		{
 			memcpy(&vertex.Normal, &buffer.data[bufferLocation], dataSize);
 		}
+		else if(attributeType == "TANGENT")
+		{
+			memcpy(&vertex.Tangent, &buffer.data[bufferLocation], dataSize);
+		}
 		else if(attributeType == "TEXCOORD_0")
 		{
 			memcpy(&vertex.TexCoord, &buffer.data[bufferLocation], dataSize);
@@ -190,6 +195,9 @@ void Mesh::ApplyNodeTransform(const glm::mat4& transform)
 
 		glm::vec4 norm = glm::vec4(vertex.Normal.x, vertex.Normal.y, vertex.Normal.z, 0.0f);
 		vertex.Normal = glm::normalize(transform * norm);
+
+		glm::vec4 tang = glm::vec4(vertex.Tangent.x, vertex.Tangent.y, vertex.Tangent.z, 0.0f);
+		vertex.Tangent = glm::normalize(transform * tang);
 	}
 }
 

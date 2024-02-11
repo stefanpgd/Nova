@@ -2,6 +2,7 @@ struct PixelIN
 {
     float3 Color : Color;
     float3 Normal : Normal;
+    float3 Tangent : Tangent;
     float3 FragPosition : FragPosition;
     float3 CameraPosition : CameraPosition;
     float2 TexCoord : TexCoord;
