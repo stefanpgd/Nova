@@ -23,6 +23,9 @@ ConstantBuffer<LightData> lightData : register(b0, space1);
 
 Texture2D Diffuse : register(t0);
 Texture2D Normal : register(t1);
+Texture2D MetallicRoughness : register(t2);
+Texture2D AmbientOcclusion : register(t3);
+
 SamplerState LinearSampler : register(s0);
 
 //float3 GetSkydomeColor(PixelIN IN)
@@ -92,5 +95,7 @@ float4 main(PixelIN IN) : SV_TARGET
         total += result;
     }
     
-    return float4(total, 1.0f);
+    float occlusion = AmbientOcclusion.Sample(LinearSampler, IN.TexCoord).r;
+    
+    return float4(total * occlusion, 1.0f);
 }

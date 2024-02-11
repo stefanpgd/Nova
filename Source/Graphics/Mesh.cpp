@@ -180,24 +180,52 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 		vertex.Color.z = material.pbrMetallicRoughness.baseColorFactor[2];
 	}
 
-	// TODO: Probably move this to a function?
-	int textureID = material.pbrMetallicRoughness.baseColorTexture.index;
-	if (textureID == -1)
+	// TODO: Right now this is an absolute mess
+	// Create a system that loads in the available types, and update the shader 
+	// accordingly. Also be able to edit the ORM channels ( in case they are the same texture )
+	// through the editor. Means you probably need to start making a Selection window like Unreal
+	int albedoID = material.pbrMetallicRoughness.baseColorTexture.index;
+	if (albedoID != -1)
+	{
+		loadedTextures = true;
+		albedoTexture = new Texture(model, model.textures[albedoID]);
+	}
+	else
 	{
 		LOG(Log::MessageType::Debug, "Texture 'BaseColor' is not available");
-		return;
 	}
-	albedoTexture = new Texture(model, model.textures[textureID]);
 
 	int normalID = material.normalTexture.index;
-	if(normalID == -1)
+	if(normalID != -1)
 	{
-		LOG(Log::MessageType::Debug, "Texture 'BaseColor' is not available");
-		return;
+		normalTexture = new Texture(model, model.textures[normalID]);
 	}
-	normalTexture = new Texture(model, model.textures[normalID]);
+	else
+	{
+		LOG(Log::MessageType::Debug, "Texture 'Normal' is not available");
+	}
 
-	loadedTextures = true;
+	int mrID = material.pbrMetallicRoughness.metallicRoughnessTexture.index;
+	if(mrID != -1)
+	{
+		loadedTextures = true;
+		metallicRoughnessTexture = new Texture(model, model.textures[mrID]);
+	}
+	else
+	{
+		LOG(Log::MessageType::Debug, "Texture 'Metallic Roughness' is not available");
+	}
+
+	int occlusionID = material.occlusionTexture.index;
+	if(occlusionID != -1)
+	{
+		loadedTextures = true;
+		ambientOcclusionTexture = new Texture(model, model.textures[occlusionID]);
+	}
+	else
+	{
+		LOG(Log::MessageType::Debug, "Texture 'Ambient Occlusion' is not available");
+	}
 }
 
 void Mesh::GenerateTangents()
