@@ -1,8 +1,7 @@
 struct PixelIN
 {
     float3 Color : Color;
-    float3 Normal : Normal;
-    float3 Tangent : Tangent;
+    float3x3 TBN : TBN;
     float3 FragPosition : FragPosition;
     float3 CameraPosition : CameraPosition;
     float2 TexCoord : TexCoord;
@@ -43,9 +42,9 @@ SamplerState LinearSampler : register(s0);
 float4 main(PixelIN IN) : SV_TARGET
 {
     float3 albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
-    float3 norm = Normal.Sample(LinearSampler, IN.TexCoord).rgb;
-    norm = IN.Normal;
-    
+    float3 tangentNormal = Normal.Sample(LinearSampler, IN.TexCoord).rgb * 2.0 - float3(1.0, 1.0, 1.0);
+    float3 normal = normalize(mul(tangentNormal, IN.TBN));
+   
     if(!any(albedo))
     {
         albedo = IN.Color;
@@ -60,19 +59,19 @@ float4 main(PixelIN IN) : SV_TARGET
         float3 FragToLight = lightData.pointLights[i].Position - IN.FragPosition;
         float3 lightDir = normalize(FragToLight);
         
-        float3 ambient = 0.04f * color;
+        float3 ambient = 0.03f * color;
         
-        float diff = max(dot(norm, lightDir), 0.0);
+        float diff = max(dot(normal, lightDir), 0.0);
         float3 diffuse = diff * color * float3(lightData.pointLights[i].Color.rgb);
         
         float3 specular = float3(0.0, 0.0, 0.0);
         
         if(diff > 0.0)
         {
-            const float shininess = 124.0;
+            const float shininess = 1024.0;
             float3 viewDirection = normalize(IN.CameraPosition - IN.FragPosition);
             
-            float specularity = max(dot(viewDirection, reflect(-lightDir, norm)), 0.0);
+            float specularity = max(dot(viewDirection, reflect(-lightDir, normal)), 0.0);
             specularity = max(pow(specularity, shininess), 0.0);
             
             specular = specularity * lightData.pointLights[i].Color.rgb;

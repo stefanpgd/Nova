@@ -14,8 +14,10 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, glm::mat4& tr
 	LoadAttribute(model, primitive, "TANGENT");
 	LoadAttribute(model, primitive, "TEXCOORD_0");
 
-	LoadMaterial(model, primitive);
 	LoadIndices(model, primitive);
+	LoadMaterial(model, primitive);
+
+	GenerateTangents();
 
 	ApplyNodeTransform(transform);
 	UploadBuffers();
@@ -196,6 +198,48 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	normalTexture = new Texture(model, model.textures[normalID]);
 
 	loadedTextures = true;
+}
+
+void Mesh::GenerateTangents()
+{
+	Vertex& vertex = vertices[0];
+
+	// Incase the vertex doesn't have the default value of a zero-vector
+	// it means that the Tangent attribute was present for the model
+	// if not, we need to generate them.
+	if(vertex.Tangent != glm::vec3(0.0f))
+	{
+		return;
+	}
+
+	// Grab the average tangent of all triangles in the model //
+	for(unsigned int i = 0; i < indices.size(); i += 3)
+	{
+		Vertex& v0 = vertices[indices[i]];
+		Vertex& v1 = vertices[indices[i + 1]];
+		Vertex& v2 = vertices[indices[i + 2]];
+
+		glm::vec3 tangent;
+
+		// Edges of triangles //
+		glm::vec3 edge1 = v1.Position - v0.Position;
+		glm::vec3 edge2 = v2.Position - v0.Position;
+		
+		// UV deltas //
+		glm::vec2 deltaUV1 = v1.TexCoord - v0.TexCoord;
+		glm::vec2 deltaUV2 = v2.TexCoord - v0.TexCoord;
+
+		float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+		tangent = (edge1 * deltaUV2.y - edge2 * deltaUV1.y) * f;
+
+		v0.Tangent += tangent;
+		v1.Tangent += tangent;
+		v2.Tangent += tangent;
+
+		v0.Tangent = glm::normalize(v0.Tangent);
+		v1.Tangent = glm::normalize(v1.Tangent);
+		v2.Tangent = glm::normalize(v2.Tangent);
+	}
 }
 
 void Mesh::ApplyNodeTransform(const glm::mat4& transform)

@@ -38,6 +38,8 @@ private:
 	void LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive);
 	void LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive);
 
+	void GenerateTangents();
+
 	void ApplyNodeTransform(const glm::mat4& transform);
 	void UploadBuffers();
 
