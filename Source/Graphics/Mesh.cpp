@@ -51,6 +51,9 @@ const unsigned int Mesh::GetIndicesCount()
 	return indicesCount;
 }
 
+// TODO: in the future, the mesh should probably bind the textures
+// when doing that, it should also tell WHICH textures are bound, so the shader 
+// can adjust its pipeline accordingly
 bool Mesh::HasTextures()
 {
 	return loadedTextures;
@@ -175,14 +178,23 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 		vertex.Color.z = material.pbrMetallicRoughness.baseColorFactor[2];
 	}
 
+	// TODO: Probably move this to a function?
 	int textureID = material.pbrMetallicRoughness.baseColorTexture.index;
 	if (textureID == -1)
 	{
 		LOG(Log::MessageType::Debug, "Texture 'BaseColor' is not available");
 		return;
 	}
-
 	albedoTexture = new Texture(model, model.textures[textureID]);
+
+	int normalID = material.normalTexture.index;
+	if(normalID == -1)
+	{
+		LOG(Log::MessageType::Debug, "Texture 'BaseColor' is not available");
+		return;
+	}
+	normalTexture = new Texture(model, model.textures[normalID]);
+
 	loadedTextures = true;
 }
 

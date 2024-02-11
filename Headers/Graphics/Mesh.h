@@ -53,5 +53,6 @@ private:
 	unsigned int indicesCount = 0;
 
 	bool loadedTextures = false;
-	Texture* albedoTexture;
+	Texture* albedoTexture = nullptr;
+	Texture* normalTexture = nullptr;
 };

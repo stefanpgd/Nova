@@ -66,7 +66,7 @@ void SceneStage::CreatePipeline()
 	cbvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 1); // Lighting buffer
 
 	CD3DX12_DESCRIPTOR_RANGE1 srvRanges[1];
-	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // Render Target as Texture
+	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0); // Albedo, Normal
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
 	rootParameters[0].InitAsConstants(32, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); // MVP & Model
