@@ -20,11 +20,6 @@
 				0.009999999776482582,
 				0.009999999776482582,
 				0.009999999776482582
-			],
-			"translation":[
-				0,
-				0,
-				0.5
 			]
 		}
 	],
@@ -64,7 +59,7 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":2599,
+			"count":14997,
 			"max":[
 				1,
 				1,
@@ -80,51 +75,51 @@
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":2599,
+			"count":14997,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":2599,
+			"count":14997,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5123,
-			"count":14700,
+			"count":88200,
 			"type":"SCALAR"
 		}
 	],
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":31188,
+			"byteLength":179964,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":31188,
-			"byteOffset":31188,
+			"byteLength":179964,
+			"byteOffset":179964,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":20792,
-			"byteOffset":62376,
+			"byteLength":119976,
+			"byteOffset":359928,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":29400,
-			"byteOffset":83168,
+			"byteLength":176400,
+			"byteOffset":479904,
 			"target":34963
 		}
 	],
 	"buffers":[
 		{
-			"byteLength":112568,
+			"byteLength":656304,
 			"uri":"skydome.bin"
 		}
 	]
