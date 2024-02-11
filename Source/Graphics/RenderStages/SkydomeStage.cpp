@@ -11,8 +11,6 @@
 #include "Graphics/DXRootSignature.h"
 #include "Graphics/DXDescriptorHeap.h"
 
-#include <d3dx12.h>
-
 SkydomeStage::SkydomeStage(Window* window, Scene* scene) : RenderStage(window), scene(scene)
 {
 	CreatePipeline();
@@ -61,6 +59,12 @@ void SkydomeStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 void SkydomeStage::SetScene(Scene* newScene)
 {
 	scene = newScene;
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE SkydomeStage::GetSkydomeHandle()
+{
+	DXDescriptorHeap* CBVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	return CBVHeap->GetGPUHandleAt(skydomeTexture->GetSRVIndex());
 }
 
 void SkydomeStage::CreatePipeline()

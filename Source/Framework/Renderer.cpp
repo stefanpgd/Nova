@@ -65,6 +65,8 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 	sceneStage = new SceneStage(window, scene);
 	screenStage = new ScreenStage(window);
 	skydomeStage = new SkydomeStage(window, scene);
+
+	sceneStage->SetSkydome(skydomeStage->GetSkydomeHandle());
 }
 
 void Renderer::Update(float deltaTime) 

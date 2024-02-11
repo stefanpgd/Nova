@@ -2,6 +2,7 @@
 
 #include "Graphics/RenderStage.h"
 #include <glm.hpp>
+#include <d3dx12.h>
 
 class Scene;
 class Mesh;
@@ -14,6 +15,8 @@ public:
 
 	void RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList) override;
 	void SetScene(Scene* newScene);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetSkydomeHandle();
 
 private:
 	void CreatePipeline();
