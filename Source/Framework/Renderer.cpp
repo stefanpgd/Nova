@@ -64,7 +64,7 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 	InitializeImGui();
 
 	shadowStage = new ShadowStage(window, scene);
-	sceneStage = new SceneStage(window, scene);
+	sceneStage = new SceneStage(window, scene, shadowStage);
 	screenStage = new ScreenStage(window);
 	skydomeStage = new SkydomeStage(window, scene);
 

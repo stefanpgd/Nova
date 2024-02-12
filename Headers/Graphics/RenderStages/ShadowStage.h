@@ -14,7 +14,9 @@ public:
 	void Update(float deltaTime);
 
 	void RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList) override;
+
 	DepthBuffer* GetDepthBuffer();
+	const glm::mat4& GetLightMatrix();
 
 private:
 	void CreatePipeline();
@@ -24,8 +26,8 @@ private:
 	float shadowNear = 1.0f;
 	float shadowFar = 50.0f;
 
-	unsigned int depthBufferWidth = 1024;
-	unsigned int depthBufferHeight = 1024;
+	unsigned int depthBufferWidth = 2048;
+	unsigned int depthBufferHeight = 2048;
 	DepthBuffer* depthBuffer;
 	
 	D3D12_RECT scissorRect;

@@ -38,7 +38,7 @@ Model::Model(const std::string& filePath)
 	TraverseRootNodes(model);
 }
 
-void Model::Draw(const glm::mat4& viewProjection)
+void Model::Draw(const glm::mat4& viewProjection, const glm::mat4& lightMatrix)
 {
 	ComPtr<ID3D12GraphicsCommandList2> commandList =
 		DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetGraphicsCommandList();
@@ -46,6 +46,7 @@ void Model::Draw(const glm::mat4& viewProjection)
 	glm::mat4 MVP = viewProjection * Transform.GetModelMatrix();
 	commandList->SetGraphicsRoot32BitConstants(0, 16, &MVP, 0);
 	commandList->SetGraphicsRoot32BitConstants(0, 16, &Transform.GetModelMatrix(), 16);
+	commandList->SetGraphicsRoot32BitConstants(0, 16, &lightMatrix, 32);
 
 	DXDescriptorHeap* SRVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 

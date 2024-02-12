@@ -29,6 +29,7 @@ ShadowStage::ShadowStage(Window* window, Scene* scene) : RenderStage(window), sc
 
 void ShadowStage::Update(float deltaTime)
 {
+	// Temp until we move it fully to editor //
 	CD3DX12_GPU_DESCRIPTOR_HANDLE depthHandle = depthBuffer->GetSRV();
 
 	ImGui::Begin("Depth Buffer");
@@ -48,7 +49,7 @@ void ShadowStage::Update(float deltaTime)
 	lightDirection = glm::normalize(lightDirection);
 
 	glm::mat4 view = glm::lookAt(lightPosition, lightPosition + lightDirection, glm::vec3(0.0f, 1.0f, 0.0));
-	glm::mat4 projection = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, shadowNear, shadowFar);
+	glm::mat4 projection = glm::perspective(glm::radians(55.0f), 1.0f, shadowNear, shadowFar);
 	lightMatrix = projection * view;
 }
 
@@ -95,6 +96,11 @@ void ShadowStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 DepthBuffer* ShadowStage::GetDepthBuffer()
 {
 	return depthBuffer;
+}
+
+const glm::mat4& ShadowStage::GetLightMatrix()
+{
+	return lightMatrix;
 }
 
 void ShadowStage::CreatePipeline()

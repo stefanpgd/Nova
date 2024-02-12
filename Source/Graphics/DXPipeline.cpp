@@ -9,7 +9,7 @@
 #include <cassert>
 
 DXPipeline::DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootSignature,
-	bool doAlphaBlending, bool usePixelShader) : alphaBlending(doAlphaBlending), usePixelShader(usePixelShader)
+	bool doAlphaBlending, bool usePixelShader, bool doBackCull) : alphaBlending(doAlphaBlending), usePixelShader(usePixelShader), doBackCull(doBackCull)
 {
 	CompileShaders(vertexPath, pixelPath);
 	CreatePipelineState(rootSignature);
@@ -87,7 +87,7 @@ void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
 	rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 	CD3DX12_RASTERIZER_DESC rasterizerDesc = {};
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;
+	rasterizerDesc.CullMode = doBackCull ? D3D12_CULL_MODE_BACK : D3D12_CULL_MODE_FRONT;
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	D3D12_RENDER_TARGET_BLEND_DESC rtBlendDesc = {};

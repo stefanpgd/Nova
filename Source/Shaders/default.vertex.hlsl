@@ -2,6 +2,7 @@ struct TransformData
 {
 	matrix MVP;
 	matrix Model;
+    matrix Light;
 };
 ConstantBuffer<TransformData> Transform : register(b0);
  
@@ -25,6 +26,7 @@ struct VertexShaderOutput
 	float3 Color : Color;
     float3x3 TBN : TBN;
     float3 FragPosition : FragPosition;
+    float4 FragLight : FragLight;
     float3 CameraPosition : CameraPosition;
     float2 TexCoord : TexCoord;
 	float4 Position : SV_Position;
@@ -42,8 +44,10 @@ VertexShaderOutput main(VertexPosColor IN)
     float3x3 TBN = float3x3(tangent, biTangent, normal);
     OUT.TBN = TBN;
     
+    OUT.FragPosition = mul(Transform.Model, float4(IN.Position, 1.0f)).rgb;
+    OUT.FragLight = mul(Transform.Light, float4(OUT.FragPosition, 1.0f));
+    
     OUT.Color = IN.Color;
-    OUT.FragPosition = mul(Transform.MVP, float4(IN.Position, 0.0f)).xyz;
     OUT.CameraPosition = Scene.CameraPosition;
     OUT.TexCoord = IN.TexCoord;
     

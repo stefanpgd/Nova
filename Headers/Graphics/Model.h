@@ -13,7 +13,7 @@ class Model
 public:
 	Model(const std::string& filePath);
 
-	void Draw(const glm::mat4& viewProjection);
+	void Draw(const glm::mat4& viewProjection, const glm::mat4& lightMatrix);
 
 	Mesh* GetMesh(int index);
 	const std::vector<Mesh*>& GetMeshes();
