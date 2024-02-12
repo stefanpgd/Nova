@@ -10,6 +10,8 @@
 #include "Graphics/Mesh.h"
 #include <d3dx12.h>
 
+#include <imgui.h>
+
 ShadowStage::ShadowStage(Window* window, Scene* scene) : RenderStage(window), scene(scene)
 {
 	depthBuffer = new DepthBuffer(depthBufferWidth, depthBufferHeight);
@@ -18,17 +20,45 @@ ShadowStage::ShadowStage(Window* window, Scene* scene) : RenderStage(window), sc
 	viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, 
 		static_cast<float>(depthBufferWidth), static_cast<float>(depthBufferHeight));
 
+	lightPosition = glm::vec3(5.0, 0.0, 0.0);
+	lightDirection = glm::vec3(-1.0f, 0.0f, 0.0f);
 
-	glm::mat4 view = glm::lookAt(glm::vec3(5.0f, 0.0f, 0.0), glm::vec3(5.0f, 0.0f, 0.0) - glm::vec3(-1.0f, 0.0f, 0.0), glm::vec3(0.0f, 1.0f, 0.0));
-	glm::mat4 projection = glm::ortho(-3.0f, 3.0f, -3.0f, 3.0f, shadowNear, shadowFar);
-	lightMatrix = projection * view;
 
 	CreatePipeline();
 }
 
+void ShadowStage::Update(float deltaTime)
+{
+	CD3DX12_GPU_DESCRIPTOR_HANDLE depthHandle = depthBuffer->GetSRV();
+
+	ImGui::Begin("Depth Buffer");
+	ImGui::Image((ImTextureID)depthHandle.ptr, ImVec2(256, 256));
+	ImGui::End();
+
+	ImGui::Begin("Depth Stage Settings");
+	ImGui::DragFloat("Near", &shadowNear);
+	ImGui::DragFloat("Far", &shadowFar);
+	ImGui::DragFloat("Ortho Size", &orthoSize);
+
+	ImGui::Separator();
+	ImGui::DragFloat3("Light Position", &lightPosition[0]);
+	ImGui::DragFloat3("Light Direction", &lightDirection[0], 0.01f);
+	ImGui::End();
+
+	lightDirection = glm::normalize(lightDirection);
+
+	glm::mat4 view = glm::lookAt(lightPosition, lightPosition + lightDirection, glm::vec3(0.0f, 1.0f, 0.0));
+	glm::mat4 projection = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, shadowNear, shadowFar);
+	lightMatrix = projection * view;
+}
+
 void ShadowStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 {
+	ComPtr<ID3D12Resource> depthResource = depthBuffer->GetResource();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = depthBuffer->GetDSV();
+
+	TransitionResource(depthResource.Get(), 
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
 	// 1. Clear Light DepthBuffer //
 	commandList->ClearDepthStencilView(depthView, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
@@ -47,6 +77,8 @@ void ShadowStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 
 	for(Model* model : scene->GetModels())
 	{
+		commandList->SetGraphicsRoot32BitConstants(0, 16, &model->Transform.GetModelMatrix(), 16);
+
 		for(Mesh* mesh : model->GetMeshes())
 		{
 			commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
@@ -55,12 +87,20 @@ void ShadowStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 			commandList->DrawIndexedInstanced(mesh->GetIndicesCount(), 1, 0, 0, 0);
 		}
 	}
+
+	TransitionResource(depthResource.Get(),
+	D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+}
+
+DepthBuffer* ShadowStage::GetDepthBuffer()
+{
+	return depthBuffer;
 }
 
 void ShadowStage::CreatePipeline()
 {
 	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
-	rootParameters[0].InitAsConstants(16, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); // Light Matrix
+	rootParameters[0].InitAsConstants(32, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); // Light & Model Matrix
 
 	rootSignature = new DXRootSignature(rootParameters, _countof(rootParameters), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 

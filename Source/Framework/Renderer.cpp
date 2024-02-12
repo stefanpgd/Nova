@@ -18,6 +18,7 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/Camera.h"
 #include "Graphics/Texture.h"
+#include "Graphics/DepthBuffer.h"
 
 // Render Stages //
 #include "Graphics/RenderStages/ShadowStage.h"
@@ -72,6 +73,8 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 
 void Renderer::Update(float deltaTime) 
 { 
+	shadowStage->Update(deltaTime);
+
 	// TODO: Maybe record render times in here, have a proper MS count etc.
 }
 

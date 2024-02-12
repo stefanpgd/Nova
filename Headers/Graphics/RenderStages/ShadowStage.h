@@ -11,12 +11,16 @@ class ShadowStage : public RenderStage
 public:
 	ShadowStage(Window* window, Scene* scene);
 
+	void Update(float deltaTime);
+
 	void RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList) override;
+	DepthBuffer* GetDepthBuffer();
 
 private:
 	void CreatePipeline();
 
 private:
+	float orthoSize = 5.0f;
 	float shadowNear = 1.0f;
 	float shadowFar = 50.0f;
 
@@ -31,5 +35,6 @@ private:
 
 	glm::vec3 lightPosition;
 	glm::vec3 lightDirection;
+	glm::vec3 lightTarget;
 	glm::mat4 lightMatrix;
 };
