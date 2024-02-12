@@ -47,6 +47,7 @@ float3 GetSkydomeColor(PixelIN IN, float3 normal)
 float4 main(PixelIN IN) : SV_TARGET
 {
     float3 albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
+    float alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
     float3 tangentNormal = Normal.Sample(LinearSampler, IN.TexCoord).rgb * 2.0 - float3(1.0, 1.0, 1.0);
     float3 normal = normalize(mul(tangentNormal, IN.TBN));
    
@@ -102,5 +103,5 @@ float4 main(PixelIN IN) : SV_TARGET
     float occlusion = AmbientOcclusion.Sample(LinearSampler, IN.TexCoord).r;
     occlusion = 1.0; // temp due to the fact that not many models use occlusion...
     
-    return float4(total * occlusion, 1.0f);
+    return float4(total * occlusion, alpha);
 }

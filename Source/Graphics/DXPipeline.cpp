@@ -8,8 +8,8 @@
 #include <d3dcompiler.h>
 #include <cassert>
 
-
-DXPipeline::DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootSignature)
+DXPipeline::DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootSignature, bool doAlphaBlending)
+	: alphaBlending(doAlphaBlending)
 {
 	CompileShaders(vertexPath, pixelPath);
 	CreatePipelineState(rootSignature);
@@ -74,6 +74,7 @@ void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
 		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
 		CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
 		CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
+		CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC Blending;
 		CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
 		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
 		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
@@ -89,9 +90,27 @@ void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
+	D3D12_RENDER_TARGET_BLEND_DESC rtBlendDesc = {};
+	rtBlendDesc.BlendEnable = alphaBlending;
+	rtBlendDesc.LogicOpEnable = false;
+	rtBlendDesc.SrcBlend = D3D12_BLEND_ONE;
+	rtBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	rtBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	rtBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	rtBlendDesc.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+	rtBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	rtBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+	rtBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	CD3DX12_BLEND_DESC blendDesc = {};
+	blendDesc.AlphaToCoverageEnable = false;
+	blendDesc.IndependentBlendEnable = false;
+	blendDesc.RenderTarget[0] = rtBlendDesc;
+
 	PSS.RootSignature = rootSignature->Get().Get();
 	PSS.InputLayout = { inputLayout, _countof(inputLayout) };
 	PSS.Rasterizer = rasterizerDesc;
+	PSS.Blending = blendDesc;
 	PSS.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	PSS.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	PSS.RTVFormats = rtvFormats;
