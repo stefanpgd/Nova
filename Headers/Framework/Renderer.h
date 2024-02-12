@@ -9,6 +9,7 @@ using namespace Microsoft::WRL;
 
 class Scene;
 
+class ShadowStage;
 class SceneStage;
 class ScreenStage;
 class SkydomeStage;
@@ -29,6 +30,7 @@ private:
 
 private:
 	// Rendering Stages //
+	ShadowStage* shadowStage;
 	SceneStage* sceneStage;
 	ScreenStage* screenStage;
 	SkydomeStage* skydomeStage;

@@ -20,6 +20,7 @@
 #include "Graphics/Texture.h"
 
 // Render Stages //
+#include "Graphics/RenderStages/ShadowStage.h"
 #include "Graphics/RenderStages/SceneStage.h"
 #include "Graphics/RenderStages/ScreenStage.h"
 #include "Graphics/RenderStages/SkydomeStage.h"
@@ -50,7 +51,6 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	device = new DXDevice();
-
 	CBVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1000, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	DSVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 5);
 	RTVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 10);
@@ -62,6 +62,7 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 
 	InitializeImGui();
 
+	shadowStage = new ShadowStage(window, scene);
 	sceneStage = new SceneStage(window, scene);
 	screenStage = new ScreenStage(window);
 	skydomeStage = new SkydomeStage(window, scene);
@@ -89,6 +90,7 @@ void Renderer::Render()
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// 3. Record Render Stages //
+	shadowStage->RecordStage(commandList);
 	sceneStage->RecordStage(commandList);
 	skydomeStage->RecordStage(commandList);
 	screenStage->RecordStage(commandList);

@@ -99,6 +99,15 @@
     <ClCompile Include="Source\Graphics\RenderStages\SceneStage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Framework\Scene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Graphics\DepthBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Graphics\RenderStages\ShadowStage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Dependencies\Microsoft\d3dcompiler_47.dll" />
@@ -200,6 +209,15 @@
     <ClInclude Include="Headers\Graphics\RenderStages\SceneStage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Headers\Framework\Scene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\Graphics\DepthBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\Graphics\RenderStages\ShadowStage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Source\Shaders\default.pixel.hlsl" />
@@ -208,5 +226,6 @@
     <FxCompile Include="Source\Shaders\screen.pixel.hlsl" />
     <FxCompile Include="Source\Shaders\skydome.vertex.hlsl" />
     <FxCompile Include="Source\Shaders\skydome.pixel.hlsl" />
+    <FxCompile Include="Source\Shaders\shadow.vertex.hlsl" />
   </ItemGroup>
 </Project>

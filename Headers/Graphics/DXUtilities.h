@@ -179,7 +179,7 @@ inline void BindAndClearRenderTarget(Window* window, CD3DX12_CPU_DESCRIPTOR_HAND
 		commandList->ClearDepthStencilView(*depthStencil, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	}
 
-	commandList->OMSetRenderTargets(1, renderTarget, FALSE, depthStencil);
 	commandList->RSSetViewports(1, &window->GetViewport());
 	commandList->RSSetScissorRects(1, &window->GetScissorRect());
+	commandList->OMSetRenderTargets(1, renderTarget, FALSE, depthStencil);
 }

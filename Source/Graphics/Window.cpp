@@ -20,6 +20,7 @@ Window::Window(const std::wstring& applicationName, unsigned int windowWidth, un
 	}
 
 	DXDescriptorHeap* RTVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	DXDescriptorHeap* DSVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 	// Get RTV indices for Screen & Render Buffers //
 	for(int i = 0; i < BackBufferCount; i++)
@@ -27,6 +28,8 @@ Window::Window(const std::wstring& applicationName, unsigned int windowWidth, un
 		renderBufferRTVs[i] = RTVHeap->GetNextAvailableIndex();
 		screenBufferRTVs[i] = RTVHeap->GetNextAvailableIndex();
 	}
+
+	depthDSVIndex = DSVHeap->GetNextAvailableIndex();
 
 	SetupWindow();
 	CreateSwapChain();
@@ -206,7 +209,7 @@ void Window::UpdateScreenBuffers()
 
 void Window::UpdateDepthBuffer()
 {
-	// 1. Release resouce //
+	// 1. Release resource //
 	depthBuffer.Reset();
 
 	// 2. Create a new Depth Buffer //
@@ -231,7 +234,7 @@ void Window::UpdateDepthBuffer()
 	DSV.Texture2D.MipSlice = 0;
 	DSV.Flags = D3D12_DSV_FLAG_NONE;
 
-	device->CreateDepthStencilView(depthBuffer.Get(), &DSV, dsvHeap->GetCPUHandleAt(0));
+	device->CreateDepthStencilView(depthBuffer.Get(), &DSV, dsvHeap->GetCPUHandleAt(depthDSVIndex));
 }
 
 #pragma region Getters
@@ -266,6 +269,12 @@ CD3DX12_CPU_DESCRIPTOR_HANDLE Window::GetCurrentScreenRTV()
 	DXDescriptorHeap* RTVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	int index = GetCurrentBackBufferIndex();
 	return RTVHeap->GetCPUHandleAt(screenBufferRTVs[index]);
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE Window::GetDepthDSV()
+{
+	DXDescriptorHeap* DSVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	return DSVHeap->GetCPUHandleAt(depthDSVIndex);
 }
 
 HWND Window::GetHWND() { return windowHandle; }

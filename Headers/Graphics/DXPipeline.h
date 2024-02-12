@@ -10,7 +10,8 @@ class DXRootSignature;
 class DXPipeline
 {
 public:
-	DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootsignature, bool doAlphaBlending = false);
+	DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootsignature, 
+		bool doAlphaBlending = false, bool usePixelShader = true);
 
 	ComPtr<ID3D12PipelineState> Get();
 	ID3D12PipelineState* GetAddress();
@@ -26,4 +27,5 @@ private:
 	ComPtr<ID3DBlob> pixelShaderBlob;
 
 	bool alphaBlending;
+	bool usePixelShader; 
 };

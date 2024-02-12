@@ -8,8 +8,8 @@
 #include <d3dcompiler.h>
 #include <cassert>
 
-DXPipeline::DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootSignature, bool doAlphaBlending)
-	: alphaBlending(doAlphaBlending)
+DXPipeline::DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootSignature,
+	bool doAlphaBlending, bool usePixelShader) : alphaBlending(doAlphaBlending), usePixelShader(usePixelShader)
 {
 	CompileShaders(vertexPath, pixelPath);
 	CreatePipelineState(rootSignature);
@@ -115,7 +115,12 @@ void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
 	PSS.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	PSS.RTVFormats = rtvFormats;
 	PSS.VS = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
-	PSS.PS = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
+
+	// TODO: In the future, make a struct to customize settings more in-depth, rn this is inconvenient
+	if(usePixelShader)
+	{
+		PSS.PS = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
+	}
 
 	D3D12_PIPELINE_STATE_STREAM_DESC pssDescription = { sizeof(PSS), &PSS };
 	ThrowIfFailed(DXAccess::GetDevice()->CreatePipelineState(&pssDescription, IID_PPV_ARGS(&pipeline)));

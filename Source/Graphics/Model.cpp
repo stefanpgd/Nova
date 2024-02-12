@@ -69,6 +69,11 @@ Mesh* Model::GetMesh(int index)
 	return meshes[index];
 }
 
+const std::vector<Mesh*>& Model::GetMeshes()
+{
+	return meshes;
+}
+
 void Model::TraverseRootNodes(tinygltf::Model& model)
 {
 	auto scene = model.scenes[model.defaultScene];

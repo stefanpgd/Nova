@@ -32,6 +32,8 @@ public:
 	ComPtr<ID3D12Resource> GetCurrentScreenBuffer();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCurrentScreenRTV();
 
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetDepthDSV();
+
 	HWND GetHWND();
 	unsigned int GetWindowWidth();
 	unsigned int GetWindowHeight();
@@ -76,6 +78,7 @@ private:
 
 	// Depth Buffer //
 	ComPtr<ID3D12Resource> depthBuffer;
+	int depthDSVIndex;
 
 	// Rasterizer Objects //
 	D3D12_VIEWPORT viewport;

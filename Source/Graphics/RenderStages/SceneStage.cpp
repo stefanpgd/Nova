@@ -24,7 +24,7 @@ void SceneStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 
 	ComPtr<ID3D12Resource> renderBuffer = window->GetCurrentRenderBuffer();
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = DSVHeap->GetCPUHandleAt(0);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = window->GetDepthDSV();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE renderRTV = window->GetCurrentRenderRTV();
 	Camera& camera = scene->GetCamera();
 
@@ -42,7 +42,6 @@ void SceneStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 	commandList->SetGraphicsRootDescriptorTable(4, skydomeHandle);
 
 	// 4. Draw Calls & Bind MVPs ( happens in Model.cpp ) // 
-
 	for(Model* model : scene->GetModels())
 	{
 		model->Draw(camera.GetViewProjectionMatrix());

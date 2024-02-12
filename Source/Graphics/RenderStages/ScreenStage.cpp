@@ -21,27 +21,24 @@ void ScreenStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 
 	ComPtr<ID3D12Resource> screenBuffer = window->GetCurrentScreenBuffer();
 	CD3DX12_GPU_DESCRIPTOR_HANDLE renderTexture = window->GetCurrentRenderSRV();
-	CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = DSVHeap->GetCPUHandleAt(0);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = window->GetDepthDSV();
 
-	// 1. Clear Depth Buffer in-case it was used last stage 
-	commandList->ClearDepthStencilView(depthView, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-	// 2. Bind pipeline & root // 
+	// 1. Bind pipeline & root // 
 	commandList->SetGraphicsRootSignature(rootSignature->GetAddress());
 	commandList->SetPipelineState(pipeline->GetAddress());
 
-	// 3. Clear depth buffer to be (re-)used //
+	// 2. Clear depth buffer before use //
 	commandList->ClearDepthStencilView(depthView, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	// 4. Use Render Target as Texture //
+	// 3. Use Render Target as Texture //
 	commandList->SetGraphicsRootDescriptorTable(0, renderTexture);
 
-	// 5. Bind & Render Screen Pass //
+	// 4. Bind & Render Screen Pass //
 	commandList->IASetVertexBuffers(0, 1, &screenMesh->GetVertexBufferView());
 	commandList->IASetIndexBuffer(&screenMesh->GetIndexBufferView());
 	commandList->DrawIndexedInstanced(screenMesh->GetIndicesCount(), 1, 0, 0, 0);
 
-	// 6. Prepare screen buffer to be presented, since this is the last stage //
+	// 5. Prepare screen buffer to be presented, since this is the last stage //
 	TransitionResource(screenBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 }
 
