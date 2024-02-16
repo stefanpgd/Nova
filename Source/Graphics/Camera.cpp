@@ -6,7 +6,7 @@ Camera::Camera(int windowWidth, int windowHeight)
 	UpdateViewMatrix();
 	ResizeProjectionMatrix(windowWidth, windowHeight);
 
-	Position = glm::vec3(0.0f, 0.0f, 10.0f);
+	Position = glm::vec3(0.0f, 1.0f, 4.0f);
 }
 
 void Camera::Update(float deltaTime)

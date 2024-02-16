@@ -20,9 +20,8 @@ ShadowStage::ShadowStage(Window* window, Scene* scene) : RenderStage(window), sc
 	viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, 
 		static_cast<float>(depthBufferWidth), static_cast<float>(depthBufferHeight));
 
-	lightPosition = glm::vec3(5.0, 0.0, 0.0);
-	lightDirection = glm::vec3(-1.0f, 0.0f, 0.0f);
-
+	lightPosition = glm::vec3(-11.000, 11.000, 0.0);
+	lightDirection = glm::normalize(glm::vec3(0.675, -0.738, 0.0f));
 
 	CreatePipeline();
 }
@@ -74,10 +73,9 @@ void ShadowStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 	commandList->OMSetRenderTargets(0, nullptr, FALSE, &depthView);
 
 	// Render scene //
-	commandList->SetGraphicsRoot32BitConstants(0, 16, &lightMatrix, 0);
-
 	for(Model* model : scene->GetModels())
 	{
+		commandList->SetGraphicsRoot32BitConstants(0, 16, &lightMatrix, 0);
 		commandList->SetGraphicsRoot32BitConstants(0, 16, &model->Transform.GetModelMatrix(), 16);
 
 		for(Mesh* mesh : model->GetMeshes())

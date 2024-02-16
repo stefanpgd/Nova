@@ -69,6 +69,8 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 	skydomeStage = new SkydomeStage(window, scene);
 
 	sceneStage->SetSkydome(skydomeStage->GetSkydomeHandle());
+
+	this->scene->AddModel("Assets/Models/GroundPlane/plane.gltf");
 }
 
 void Renderer::Update(float deltaTime) 

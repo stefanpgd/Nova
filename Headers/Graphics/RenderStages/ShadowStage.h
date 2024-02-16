@@ -26,8 +26,8 @@ private:
 	float shadowNear = 1.0f;
 	float shadowFar = 50.0f;
 
-	unsigned int depthBufferWidth = 2048;
-	unsigned int depthBufferHeight = 2048;
+	unsigned int depthBufferWidth = 4096;
+	unsigned int depthBufferHeight = 4096;
 	DepthBuffer* depthBuffer;
 	
 	D3D12_RECT scissorRect;

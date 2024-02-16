@@ -33,16 +33,30 @@ SamplerState LinearSampler : register(s0);
 
 float GetShadow(PixelIN IN, float3 normal)
 {
-    float3 projectCoords = IN.FragLight.xyz / IN.FragLight.w;
+    int width, height, levels;
+    ShadowMap.GetDimensions(0, width, height, levels);
+    float2 texelSize = float2(1.0, 1.0) / float2(width, height);
     
+    float3 projectCoords = IN.FragLight.xyz / IN.FragLight.w;
     float2 uv = 0.5f * projectCoords.xy + 0.5f;
     uv.y = 1.0f - uv.y;
     
     float closestDepth = ShadowMap.Sample(LinearSampler, uv).r;
     float currentDepth = projectCoords.z;
-
-    float bias = max(0.05 * (1.0 - dot(normal, float3(-1.0, 0.0, 0.0))), 0.005);
-    float shadow = currentDepth - bias >= closestDepth ? 1.0 : 0.0;
+    
+    float3 lightDir = normalize(float3(0.675, -0.738, 0.0f));
+    float bias = max(0.001 * (1.0 - dot(normal, lightDir)), 0.0001);
+    
+    float shadow = 0.0;
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = ShadowMap.Sample(LinearSampler, uv.xy + float2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
     
     return shadow;
 }
@@ -73,7 +87,7 @@ float4 main(PixelIN IN) : SV_TARGET
         albedo = IN.Color;
     }
     
-    float3 lightDir = float3(-1.0, 0.0, 0.0);
+    float3 lightDir = normalize(float3(0.675, -0.738, 0.0f));
     
     float3 total = float3(0.0f, 0.0f, 0.0f);
     float3 diffuse = float3(0.0, 0.0, 0.0);
@@ -97,7 +111,6 @@ float4 main(PixelIN IN) : SV_TARGET
     
     float shadow = GetShadow(IN, normal);
     total = 0.15 * albedo + (1.0 - shadow) * (diffuse + specular);
-    total = clamp(total, float3(0.0, 0.0, 0.0), float3(1.0, 1.0, 1.0));
-    
+   
     return float4(total, alpha);
 }
