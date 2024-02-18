@@ -19,7 +19,6 @@ Model::Model(const std::string& filePath)
 	// Tiny glTF provides us with a model
 	// The model structure contains EVERYTHING already neatly prepared in vectors.
 	bool result = loader.LoadASCIIFromFile(&model, &error, &warning, filePath);
-
 	if(!warning.empty())
 	{
 		LOG(Log::MessageType::Debug, warning);

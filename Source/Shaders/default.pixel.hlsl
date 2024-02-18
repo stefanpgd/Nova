@@ -75,42 +75,119 @@ float3 GetSkydomeColor(PixelIN IN, float3 normal)
     return Skydome.Sample(LinearSampler, float2(u, v)).rgb;
 }
 
+// Testing D, G, F, Fr Fd //
+
+static float PI = 3.14159265;
+
+float D_GGX(float3 n, float3 h, float roughness)
+{
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NoH = max(dot(n, h), 0.0);
+    float NoH2 = NoH * NoH;
+
+    float nom = a2;
+    float denom = (NoH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return nom / denom;
+}
+
+float G_Shlick(float NoV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+
+    float nom = NoV;
+    float denom = NoV * (1.0 - k) + k;
+
+    return nom / denom;
+}
+
+float G_Smith(float3 n, float3 v, float3 l, float roughness)
+{
+    float NoV = max(dot(n, v), 0.0);
+    float NoL = max(dot(n, l), 0.0);
+    float ggx2 = G_Shlick(NoV, roughness);
+    float ggx1 = G_Shlick(NoL, roughness);
+
+    return ggx1 * ggx2;
+}
+
+float3 F_Shlick(float cosTheta, float3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+float F_Schlick90(float cosTheta, float f0, float f90)
+{
+    return f0 + (f90 - f0) * pow(1.0 - cosTheta, 5.0);
+}
+
+float Fd_Burley(float NoV, float NoL, float LoH, float roughness)
+{
+    float f90 = 0.5 + 2.0 * (roughness * roughness) * LoH * LoH;
+    float lightScatter = F_Schlick90(NoL, 1.0, f90);
+    float viewScatter = F_Schlick90(NoV, 1.0, f90);
+    
+    return lightScatter * viewScatter * (1.0 / PI);
+}
+
+// End testing //
+
 float4 main(PixelIN IN) : SV_TARGET
 {
     float3 albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
+    float metallic = MetallicRoughness.Sample(LinearSampler, IN.TexCoord).b;
+    float roughness = MetallicRoughness.Sample(LinearSampler, IN.TexCoord).g;
     float alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
+    
     float3 tangentNormal = Normal.Sample(LinearSampler, IN.TexCoord).rgb * 2.0 - float3(1.0, 1.0, 1.0);
-    float3 normal = normalize(mul(tangentNormal, IN.TBN));
     
-    if (!any(albedo) && !any(normal))
-    {
-        albedo = IN.Color;
-    }
+    float3 n = normalize(mul(tangentNormal, IN.TBN));
+    float3 v = normalize(IN.CameraPosition - IN.FragPosition);
     
-    float3 lightDir = normalize(float3(0.675, -0.738, 0.0f));
+    // Determine if its a dielectric or a conductor based on the metallic parameter [0, 1]
+    float3 f0 = float3(0.04, 0.04, 0.04);
+    f0 = lerp(f0, albedo, metallic);
     
-    float3 total = float3(0.0f, 0.0f, 0.0f);
-    float3 diffuse = float3(0.0, 0.0, 0.0);
-    float3 specular = float3(0.0, 0.0, 0.0);
+    float3 Lo = float3(0.0, 0.0, 0.0);
     
-    float diff = max(dot(normal, -lightDir), 0.0);
-    diffuse = diff * albedo;
+    float3 l = -normalize(float3(0.0, -0.738, -0.675));
+    float3 h = normalize(v + l);
     
-    if (diff > 0.0)
-    {
-        const float shininess = 124.0;
-        float3 viewDirection = normalize(IN.CameraPosition - IN.FragPosition);
-        float specularity = max(dot(viewDirection, reflect(lightDir, normal)), 0.0);
-        specularity = max(pow(specularity, shininess), 0.0);
-            
-        float metallic = MetallicRoughness.Sample(LinearSampler, IN.TexCoord).g;
-        float roughness = MetallicRoughness.Sample(LinearSampler, IN.TexCoord).b;
-            
-        specular = (specularity * metallic * (1.0 - roughness)) * GetSkydomeColor(IN, normal);
-    }
+    // For now we only use our directional light //
+    float directionalIntensity = 4.0;
+    float3 radiance = float3(1.0, 1.0, 1.0) * directionalIntensity;
     
-    float shadow = GetShadow(IN, normal);
-    total = 0.15 * albedo + (1.0 - shadow) * (diffuse + specular);
-   
-    return float4(total, alpha);
+    // Cook-Torrance BRDF ( Fr )
+    float D = D_GGX(n, h, roughness);
+    float G = G_Smith(n, v, l, roughness);
+    float3 F = F_Shlick(max(dot(h, v), 0.0), f0);
+    
+    float3 DGF = F * (D * G);
+    float denom = 4.0 * max(dot(n, v), 0.0) * max(dot(n, l), 0.0) + 0.0001;
+    float3 Fr = DGF / denom;
+    
+    float NoV = abs(dot(n, v)) + 1e-5;
+    float NoL = clamp(dot(n, l), 0.0, 1.0);
+    float LoH = clamp(dot(l, h), 0.0, 1.0);
+    float Fd = Fd_Burley(NoV, NoL, LoH, roughness);
+    
+    float3 kS = F;
+    float3 kD = float3(1.0, 1.0, 1.0) - kS;
+    kD *= 1.0 - metallic;
+    
+    // Outgoing Irradiance
+    Lo = (kD * albedo * Fd + Fr) * radiance * NoL;
+    
+    float3 ambient = albedo * 0.03;
+    float3 color = ambient + Lo;
+    
+    float shadow = GetShadow(IN, n);
+    color = 0.1 * color + (1.0 - shadow) * color;
+    
+    color = clamp(color, float3(0.0, 0.0, 0.0), float3(1.0, 1.0, 1.0));
+    
+    return float4(color, alpha);
 }
