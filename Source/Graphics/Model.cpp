@@ -51,6 +51,8 @@ void Model::Draw(const glm::mat4& viewProjection, const glm::mat4& lightMatrix)
 
 	for(Mesh* mesh : meshes)
 	{
+		commandList->SetGraphicsRootDescriptorTable(6, mesh->GetMaterialView());
+
 		if(mesh->HasTextures())
 		{
 			CD3DX12_GPU_DESCRIPTOR_HANDLE textureData = SRVHeap->GetGPUHandleAt(mesh->GetTextureID());

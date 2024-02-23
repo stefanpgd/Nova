@@ -70,6 +70,7 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 
 	sceneStage->SetSkydome(skydomeStage->GetSkydomeHandle());
 
+	// TODO: Move to scene
 	this->scene->AddModel("Assets/Models/GroundPlane/plane.gltf");
 }
 

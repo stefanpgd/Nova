@@ -57,5 +57,5 @@ void Scene::UpdateLightBuffer()
 		lightCBVIndex = CBVHeap->GetNextAvailableIndex();
 	}
 
-	UpdateInFlightCBV(lightBuffer.Get(), lightCBVIndex, 1, sizeof(LightData), &lights);
+	UpdateInFlightCBV(lightBuffer, lightCBVIndex, 1, sizeof(LightData), &lights);
 }

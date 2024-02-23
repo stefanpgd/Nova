@@ -18,9 +18,11 @@ Mesh::Mesh(tinygltf::Model& model, tinygltf::Primitive& primitive, glm::mat4& tr
 	LoadMaterial(model, primitive);
 
 	GenerateTangents();
-
+	
 	ApplyNodeTransform(transform);
+
 	UploadBuffers();
+	UpdateMaterialData();
 }
 
 Mesh::Mesh(Vertex* verts, unsigned int vertexCount, unsigned int* indi, unsigned int indexCount)
@@ -36,6 +38,18 @@ Mesh::Mesh(Vertex* verts, unsigned int vertexCount, unsigned int* indi, unsigned
 	}
 
 	UploadBuffers();
+	UpdateMaterialData();
+}
+
+void Mesh::UpdateMaterialData()
+{
+	if(materialCBVIndex < 0)
+	{
+		DXDescriptorHeap* CBVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		materialCBVIndex = CBVHeap->GetNextAvailableIndex();
+	}
+
+	UpdateInFlightCBV(materialBuffer, materialCBVIndex, 1, sizeof(Material), &material);
 }
 
 const D3D12_VERTEX_BUFFER_VIEW& Mesh::GetVertexBufferView()
@@ -46,6 +60,13 @@ const D3D12_VERTEX_BUFFER_VIEW& Mesh::GetVertexBufferView()
 const D3D12_INDEX_BUFFER_VIEW& Mesh::GetIndexBufferView()
 {
 	return indexBufferView;
+}
+
+const CD3DX12_GPU_DESCRIPTOR_HANDLE Mesh::GetMaterialView()
+{
+	DXDescriptorHeap* CBVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE handle = CBVHeap->GetGPUHandleAt(materialCBVIndex);
+	return handle;
 }
 
 const unsigned int Mesh::GetIndicesCount()

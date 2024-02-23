@@ -1,8 +1,6 @@
 #include "Graphics/RenderStages/SceneStage.h"
 #include "Graphics/RenderStages/ShadowStage.h"
 
-#include "Framework/Scene.h"
-
 #include "Graphics/DXRootSignature.h"
 #include "Graphics/DXDescriptorHeap.h"
 #include "Graphics/DXPipeline.h"
@@ -11,6 +9,7 @@
 #include "Graphics/Model.h"
 #include "Graphics/DepthBuffer.h"
 
+#include "Framework/Scene.h"
 #include <imgui_impl_dx12.h>
 
 SceneStage::SceneStage(Window* window, Scene* scene, ShadowStage* shadowStage) 
@@ -82,13 +81,17 @@ void SceneStage::CreatePipeline()
 	CD3DX12_DESCRIPTOR_RANGE1 shadowRange[1];
 	shadowRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 1);
 
-	CD3DX12_ROOT_PARAMETER1 rootParameters[6];
+	CD3DX12_DESCRIPTOR_RANGE1 materialRange[1];
+	materialRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 2);
+
+	CD3DX12_ROOT_PARAMETER1 rootParameters[7];
 	rootParameters[0].InitAsConstants(48, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); // MVP, Model, Light
 	rootParameters[1].InitAsConstants(3, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX); // Scene info ( Camera... etc. ) 
 	rootParameters[2].InitAsDescriptorTable(1, &cbvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Lighting data
 	rootParameters[3].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
 	rootParameters[4].InitAsDescriptorTable(1, &skydomeRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // Skydome
 	rootParameters[5].InitAsDescriptorTable(1, &shadowRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // Shadow
+	rootParameters[6].InitAsDescriptorTable(1, &materialRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // material
 
 	rootSignature = new DXRootSignature(rootParameters, _countof(rootParameters), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature, true);

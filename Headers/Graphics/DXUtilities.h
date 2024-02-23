@@ -114,7 +114,7 @@ inline void UploadPixelShaderResource(ComPtr<ID3D12Resource>& destinationResourc
 }
 
 // Ensures that the direct queue is paused so that a resource and its data can be updated 
-inline void UpdateInFlightCBV(ID3D12Resource* destinationResource, unsigned int CBVIndex, unsigned int numberOfElements, 
+inline void UpdateInFlightCBV(ComPtr<ID3D12Resource>& destinationResource, unsigned int CBVIndex, unsigned int numberOfElements, 
 	unsigned int elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE)
 {
 	if(!bufferData)
