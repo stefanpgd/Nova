@@ -39,6 +39,7 @@ struct MaterialData
     float3 Color;
     float Metallic;
     float Roughness;
+	float Opacity;
 };
 ConstantBuffer<MaterialData> material : register(b0, space2);
 
@@ -169,9 +170,13 @@ float4 main(PixelIN IN) : SV_TARGET
         if (material.hasAlbedo)
         {
             albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
-            alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
         
-            ambient = albedo * 0.125;
+            if(alpha > 0.99)
+            {
+                alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
+            }
+            
+            ambient = albedo * 0.05;
         }
     
         if (material.hasNormal)
@@ -191,7 +196,7 @@ float4 main(PixelIN IN) : SV_TARGET
         if (material.hasOclussion)
         {
             ambientOcclusion = AmbientOcclusion.Sample(LinearSampler, IN.TexCoord).r;
-            ambient = 0.125 * albedo * ambientOcclusion;
+            ambient = albedo * 0.05;
         }
     
         if (material.hasEmission)
@@ -253,7 +258,7 @@ float4 main(PixelIN IN) : SV_TARGET
     
     if(!any(emission))
     {
-       return float4(float3(color), alpha);
+        return float4(color * ambientOcclusion, alpha);
     }
     else
     {
