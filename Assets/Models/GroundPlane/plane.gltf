@@ -15,18 +15,7 @@
 	"nodes":[
 		{
 			"mesh":0,
-			"name":"Groundplane_1x1cm",
-			"rotation":[
-				0.7071068286895752,
-				0,
-				0,
-				0.7071068286895752
-			],
-			"scale":[
-				0.009999999776482582,
-				0.009999999776482582,
-				0.009999999776482582
-			]
+			"name":"Groundplane_1x1cm"
 		}
 	],
 	"materials":[
@@ -54,10 +43,9 @@
 					"attributes":{
 						"POSITION":0,
 						"NORMAL":1,
-						"TEXCOORD_0":2,
-						"TANGENT":3
+						"TEXCOORD_0":2
 					},
-					"indices":4,
+					"indices":3,
 					"material":0
 				}
 			]
@@ -125,12 +113,6 @@
 		},
 		{
 			"bufferView":3,
-			"componentType":5126,
-			"count":121,
-			"type":"VEC4"
-		},
-		{
-			"bufferView":4,
 			"componentType":5123,
 			"count":600,
 			"type":"SCALAR"
@@ -157,14 +139,8 @@
 		},
 		{
 			"buffer":0,
-			"byteLength":1936,
-			"byteOffset":3872,
-			"target":34962
-		},
-		{
-			"buffer":0,
 			"byteLength":1200,
-			"byteOffset":5808,
+			"byteOffset":3872,
 			"target":34963
 		}
 	],
@@ -176,7 +152,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":7008,
+			"byteLength":5072,
 			"uri":"plane.bin"
 		}
 	]

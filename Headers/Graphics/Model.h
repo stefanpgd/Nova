@@ -26,5 +26,7 @@ private:
 	void TraverseRootNodes(tinygltf::Model& model);
 	void TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, const glm::mat4& parentMatrix);
 
+	glm::mat4 GetTransformFromNode(tinygltf::Node& node);
+
 	std::vector<Mesh*> meshes;
 };

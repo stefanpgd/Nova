@@ -25,7 +25,6 @@ void Editor::Update(float deltaTime)
 
 	ModelSelectionWindow();
 	StatisticsWindow();
-	TransformWindow();
 	LightsWindow();
 
 	HierachyWindow();
@@ -167,7 +166,6 @@ void Editor::DetailsWindow()
 	ImGui::DragFloat3("Scale:", &model->Transform.Scale[0], 0.01f, 0.0f, 10000.0f);
 	ImGui::Separator();
 
-
 	ImGui::SeparatorText("Material Settings");
 	bool materialUpdated = false;
 
@@ -231,15 +229,6 @@ void Editor::TextureColumnHighlight(Texture* texture, std::string name)
 
 	ImGui::Columns(1);
 	ImGui::Separator();
-}
-
-void Editor::TransformWindow()
-{
-	ImGui::Begin("Transforms");
-
-
-
-	ImGui::End();
 }
 
 void Editor::LoadModelFilePaths(std::string path, std::string originalPath)

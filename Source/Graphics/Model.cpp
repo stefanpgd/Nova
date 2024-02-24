@@ -2,6 +2,7 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/DXAccess.h"
 #include "Graphics/Texture.h"
+#include "Graphics/Transform.h"
 
 #include "Framework/Mathematics.h"
 #include "Utilities/Logger.h"
@@ -100,8 +101,7 @@ void Model::TraverseRootNodes(tinygltf::Model& model)
 		}
 		else
 		{
-			// Identity Matrix //
-			transform = glm::mat4(1.0f);
+			transform = GetTransformFromNode(rootNode);
 		}
 
 		if(rootNode.mesh != -1)
@@ -128,7 +128,7 @@ void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, con
 {
 	glm::mat4 transform;
 
-	// 1. Load matrix for note //
+	// 1. Load matrix from node //
 	if(node.matrix.size() > 0)
 	{
 		std::vector<float> matrix;
@@ -141,8 +141,10 @@ void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, con
 	}
 	else
 	{
-		// Identity Matrix //
-		transform = glm::mat4(1.0f); 
+		// 1b. incase matrix data doesn't exist,
+		// its assumed transform data is either Identity or 
+		// stored as vectors Position, Rotation, Scale )
+		transform = GetTransformFromNode(node); 
 	}
 
 	glm::mat4 childNodeTransform = parentTransform * transform;
@@ -165,4 +167,39 @@ void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, con
 	{
 		TraverseChildNodes(model, model.nodes[noteID], childNodeTransform);
 	}
+}
+
+glm::mat4 Model::GetTransformFromNode(tinygltf::Node& node)
+{
+	::Transform transform;
+
+	// The size of any type of transformation data defaults to 0.
+	// When a vector isn't 0, it means it contains data
+	if(node.translation.size() > 0)
+	{
+		transform.Position.x = node.translation[0];
+		transform.Position.y = node.translation[1];
+		transform.Position.z = node.translation[2];
+	}
+
+	if(node.rotation.size() > 0)
+	{
+		glm::quat rotation;
+		rotation.x = node.rotation[0];
+		rotation.y = node.rotation[1];
+		rotation.z = node.rotation[2];
+		rotation.w = node.rotation[3];
+
+		glm::vec3 euler = glm::eulerAngles(rotation) * 180.0f / 3.14159265f;
+		transform.Rotation = euler;
+	}
+
+	if(node.scale.size() > 0)
+	{
+		transform.Scale.x = node.scale[0];
+		transform.Scale.y = node.scale[1];
+		transform.Scale.z = node.scale[2];
+	}
+	
+	return transform.GetModelMatrix();
 }
