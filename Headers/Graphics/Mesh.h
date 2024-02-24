@@ -21,17 +21,17 @@ struct Vertex
 
 struct Material
 {
-	bool hasAlbedo;
-	bool hasNormal;
-	bool hasMetallicRoughness;
-	bool hasOclussion;
+	int hasAlbedo;
+	int hasNormal;
+	int hasMetallicRoughness;
+	int hasOcclusion;
 
 	unsigned int oChannel = 0;
 	unsigned int rChannel = 1;
 	unsigned int mChannel = 2;
 
 	// GPU Memory alignment //
-	double stub[30];
+	double stub[28];
 };
 
 class Texture;
@@ -56,6 +56,7 @@ private:
 	void LoadAttribute(tinygltf::Model& model, tinygltf::Primitive& primitive, const std::string& attributeType);
 	void LoadIndices(tinygltf::Model& model, tinygltf::Primitive& primitive);
 	void LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive);
+	void LoadTexture(tinygltf::Model& model, Texture** texture, int textureID, int& materialCheck);
 
 	void GenerateTangents();
 
@@ -75,12 +76,11 @@ private:
 	unsigned int indicesCount = 0;
 
 	// Texture & Material Data //
-	bool loadedTextures = false;
-
 	Texture* albedoTexture = nullptr;
 	Texture* normalTexture = nullptr;
 	Texture* metallicRoughnessTexture = nullptr;
-	Texture* ambientOcclusionTexture = nullptr;
+	Texture* occlusionTexture = nullptr;
+	bool hasTextures = false;
 
 	int materialCBVIndex = -1;
 	Material material;

@@ -3,6 +3,7 @@
 class DXDevice;
 class DXCommands;
 class DXDescriptorHeap;
+class Texture;
 
 #include <wrl.h>
 #include <d3d12.h>
@@ -15,4 +16,5 @@ namespace DXAccess
 	DXDescriptorHeap* GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type);
 
 	unsigned int GetCurrentBackBufferIndex();
+	Texture* GetDefaultTexture();
 }

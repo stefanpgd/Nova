@@ -42,6 +42,8 @@ namespace RendererInternal
 	DXDescriptorHeap* CBVHeap = nullptr;
 	DXDescriptorHeap* DSVHeap = nullptr;
 	DXDescriptorHeap* RTVHeap = nullptr;
+
+	Texture* defaultTexture = nullptr;
 }
 using namespace RendererInternal;
 
@@ -60,6 +62,7 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 	copyCommands = new DXCommands(D3D12_COMMAND_LIST_TYPE_DIRECT, 1);
 
 	window = new Window(applicationName, windowWidth, windowHeight);
+	defaultTexture = new Texture("Assets/Textures/error.jpg");
 
 	InitializeImGui();
 
@@ -175,6 +178,13 @@ unsigned int DXAccess::GetCurrentBackBufferIndex()
 	}
 
 	return window->GetCurrentBackBufferIndex();
+}
+
+Texture* DXAccess::GetDefaultTexture()
+{
+	// Incase an texture isn't present, the 'default' texture gets loaded in
+	// Similar to Valve's ERROR 3D model
+	return defaultTexture;
 }
 
 DXDescriptorHeap* DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type)

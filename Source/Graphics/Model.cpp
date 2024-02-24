@@ -53,6 +53,7 @@ void Model::Draw(const glm::mat4& viewProjection, const glm::mat4& lightMatrix)
 	{
 		commandList->SetGraphicsRootDescriptorTable(6, mesh->GetMaterialView());
 
+		// TODO: Maybe try binding individual SRVs instead of a table, allowing for more intermediate customization
 		if(mesh->HasTextures())
 		{
 			CD3DX12_GPU_DESCRIPTOR_HANDLE textureData = SRVHeap->GetGPUHandleAt(mesh->GetTextureID());

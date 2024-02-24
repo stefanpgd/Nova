@@ -74,17 +74,15 @@ const unsigned int Mesh::GetIndicesCount()
 	return indicesCount;
 }
 
-// TODO: in the future, the mesh should probably bind the textures
-// when doing that, it should also tell WHICH textures are bound, so the shader 
-// can adjust its pipeline accordingly
 bool Mesh::HasTextures()
 {
-	return loadedTextures;
+	return hasTextures;
 }
 
-// TODO: add type of texture in here to get ID
 unsigned int Mesh::GetTextureID()
 {
+	// Returns the first SRV of the group:
+	// Albedo, Normal, MetallicRoughness, Ambient Occlusion
 	return albedoTexture->GetSRVIndex();
 }
 
@@ -189,63 +187,47 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 {
 	// For now, do only color //
 	tinygltf::Accessor& accessor = model.accessors[primitive.attributes.at("POSITION")];
-	tinygltf::Material& material = model.materials[primitive.material];
+	tinygltf::Material& mat = model.materials[primitive.material];
 
 	for (int i = 0; i < accessor.count; i++)
 	{
 		Vertex& vertex = vertices[i];
 
 		// TODO: Memcpy or send pointer
-		vertex.Color.x = material.pbrMetallicRoughness.baseColorFactor[0];
-		vertex.Color.y = material.pbrMetallicRoughness.baseColorFactor[1];
-		vertex.Color.z = material.pbrMetallicRoughness.baseColorFactor[2];
+		vertex.Color.x = mat.pbrMetallicRoughness.baseColorFactor[0];
+		vertex.Color.y = mat.pbrMetallicRoughness.baseColorFactor[1];
+		vertex.Color.z = mat.pbrMetallicRoughness.baseColorFactor[2];
 	}
 
-	// TODO: Right now this is an absolute mess
-	// Create a system that loads in the available types, and update the shader 
-	// accordingly. Also be able to edit the ORM channels ( in case they are the same texture )
-	// through the editor. Means you probably need to start making a Selection window like Unreal
-	int albedoID = material.pbrMetallicRoughness.baseColorTexture.index;
-	if (albedoID != -1)
+	int albedoID = mat.pbrMetallicRoughness.baseColorTexture.index;
+	int normalID = mat.normalTexture.index;
+	int metallicRoughnessID = mat.pbrMetallicRoughness.metallicRoughnessTexture.index;
+	int occlusionID = mat.occlusionTexture.index;
+
+	LoadTexture(model, &albedoTexture, albedoID, material.hasAlbedo);
+	LoadTexture(model, &normalTexture, normalID, material.hasNormal);
+	LoadTexture(model, &metallicRoughnessTexture, metallicRoughnessID, material.hasMetallicRoughness);
+	LoadTexture(model, &occlusionTexture, occlusionID, material.hasOcclusion);
+
+	// Incase a mesh is loaded through a TinyglTF primitive, it is assumed
+	// either textures or colors were present, when the other Mesh constructor is used
+	// with raw data, then it's assumed no textures are present. For example with the Screen Quad.
+	hasTextures = true;
+}
+
+void Mesh::LoadTexture(tinygltf::Model& model, Texture** texture, int textureID, int& materialCheck)
+{
+	if(textureID != -1)
 	{
-		loadedTextures = true;
-		albedoTexture = new Texture(model, model.textures[albedoID]);
+		*texture = new Texture(model, model.textures[textureID]);
+		materialCheck = 1;
 	}
 	else
 	{
-		LOG(Log::MessageType::Debug, "Texture 'BaseColor' is not available");
-	}
-
-	int normalID = material.normalTexture.index;
-	if(normalID != -1)
-	{
-		normalTexture = new Texture(model, model.textures[normalID]);
-	}
-	else
-	{
-		LOG(Log::MessageType::Debug, "Texture 'Normal' is not available");
-	}
-
-	int mrID = material.pbrMetallicRoughness.metallicRoughnessTexture.index;
-	if(mrID != -1)
-	{
-		loadedTextures = true;
-		metallicRoughnessTexture = new Texture(model, model.textures[mrID]);
-	}
-	else
-	{
-		LOG(Log::MessageType::Debug, "Texture 'Metallic Roughness' is not available");
-	}
-
-	int occlusionID = material.occlusionTexture.index;
-	if(occlusionID != -1)
-	{
-		loadedTextures = true;
-		ambientOcclusionTexture = new Texture(model, model.textures[occlusionID]);
-	}
-	else
-	{
-		LOG(Log::MessageType::Debug, "Texture 'Ambient Occlusion' is not available");
+		// TODO: Incase we are allowed to bind Individual SRVs, then do this, temporarily we do this 
+		//*texture = DXAccess::GetDefaultTexture();
+		*texture = new Texture("Assets/Textures/error.jpg");
+		materialCheck = 0;
 	}
 }
 

@@ -73,7 +73,7 @@ void SceneStage::CreatePipeline()
 	cbvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 1); // Lighting buffer
 
 	CD3DX12_DESCRIPTOR_RANGE1 srvRanges[1];
-	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0); // Albedo, Normal, Metallic Roughess
+	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0); // Albedo, Normal, Metallic Roughess, Ambient Occlusion
 
 	CD3DX12_DESCRIPTOR_RANGE1 skydomeRange[1];
 	skydomeRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 1); 

@@ -20,16 +20,32 @@ struct LightData
     PointLight pointLights[15];
     int activePointLights;
 };
-ConstantBuffer<LightData> lightData : register(b0, space1);
+ConstantBuffer<LightData> lights : register(b0, space1);
+
+struct MaterialData
+{
+    bool hasAlbedo;
+    bool hasNormal;
+    bool hasMetallicRoughness;
+    bool hasOclussion;
+    
+    uint OclussionChannel;
+    uint MetallicChannel;
+    uint RoughnessChannel;
+};
+ConstantBuffer<MaterialData> material : register(b0, space2);
 
 Texture2D Diffuse : register(t0);
 Texture2D Normal : register(t1);
 Texture2D MetallicRoughness : register(t2);
+Texture2D AmbientOcclusion : register(t3);
 
 Texture2D Skydome : register(t0, space1);
 Texture2D ShadowMap : register(t1, space1);
 
 SamplerState LinearSampler : register(s0);
+
+static float PI = 3.14159265;
 
 float GetShadow(PixelIN IN, float3 normal)
 {
@@ -63,21 +79,15 @@ float GetShadow(PixelIN IN, float3 normal)
 
 float3 GetSkydomeColor(PixelIN IN, float3 normal)
 {
-    float pi = 3.14159265;
-    
     float3 incoming = normalize(IN.FragPosition - IN.CameraPosition);
     float3 sampleRay = reflect(incoming, normal);
     
     float3 n = normalize(sampleRay);
-    float u = atan2(n.x, n.z) / (2.0 * pi) + 0.5;
+    float u = atan2(n.x, n.z) / (2.0 * PI) + 0.5;
     float v = n.y * 0.5 + 0.5;
     
     return Skydome.Sample(LinearSampler, float2(u, v)).rgb;
 }
-
-// Testing D, G, F, Fr Fd //
-
-static float PI = 3.14159265;
 
 float D_GGX(float3 n, float3 h, float roughness)
 {
@@ -133,11 +143,11 @@ float Fd_Burley(float NoV, float NoL, float LoH, float roughness)
     return lightScatter * viewScatter * (1.0 / PI);
 }
 
-// End testing //
-
 float4 main(PixelIN IN) : SV_TARGET
 {
-    float3 albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
+    float3 albedo = float3(0.0, 0.0, 0.0);
+    albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
+    
     float metallic = MetallicRoughness.Sample(LinearSampler, IN.TexCoord).b;
     float roughness = MetallicRoughness.Sample(LinearSampler, IN.TexCoord).g;
     float alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
@@ -181,13 +191,35 @@ float4 main(PixelIN IN) : SV_TARGET
     // Outgoing Irradiance
     Lo = (kD * albedo * Fd + Fr) * radiance * NoL;
     
-    float3 ambient = albedo * 0.03;
+    
+    float3 ambient = 0.0;
+    
+    if(material.hasOclussion)
+    {
+        ambient = 0.3 * albedo * AmbientOcclusion.Sample(LinearSampler, IN.TexCoord).r;
+    }
+    else
+    {
+        ambient = 0.05 * albedo;
+    }
+    
     float3 color = ambient + Lo;
     
     float shadow = GetShadow(IN, n);
-    color = 0.1 * color + (1.0 - shadow) * color;
+    float shadowStrength = min(shadow, 0.8);
+    color *= (1.0 - shadowStrength);
     
     color = clamp(color, float3(0.0, 0.0, 0.0), float3(1.0, 1.0, 1.0));
     
-    return float4(color, alpha);
+    //return float4(float3(ambient), alpha);
+    
+    
+    float x = 0.0;
+    
+    if(material.hasOclussion)
+    {
+        x = 1.0;
+    }
+    
+    return float4(float3(x, x, x), 1.0);
 }
