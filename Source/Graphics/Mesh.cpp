@@ -203,11 +203,13 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	int normalID = mat.normalTexture.index;
 	int metallicRoughnessID = mat.pbrMetallicRoughness.metallicRoughnessTexture.index;
 	int occlusionID = mat.occlusionTexture.index;
+	int emissiveID = mat.emissiveTexture.index;
 
 	LoadTexture(model, &albedoTexture, albedoID, material.hasAlbedo);
 	LoadTexture(model, &normalTexture, normalID, material.hasNormal);
 	LoadTexture(model, &metallicRoughnessTexture, metallicRoughnessID, material.hasMetallicRoughness);
 	LoadTexture(model, &occlusionTexture, occlusionID, material.hasOcclusion);
+	LoadTexture(model, &emissiveTexture, emissiveID, material.hasEmissive);
 
 	// Incase a mesh is loaded through a TinyglTF primitive, it is assumed
 	// either textures or colors were present, when the other Mesh constructor is used

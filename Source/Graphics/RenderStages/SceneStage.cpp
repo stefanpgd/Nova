@@ -72,8 +72,9 @@ void SceneStage::CreatePipeline()
 	CD3DX12_DESCRIPTOR_RANGE1 cbvRanges[1]; // placeholder cause there is no guarantee they are next too each other...
 	cbvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 1); // Lighting buffer
 
-	CD3DX12_DESCRIPTOR_RANGE1 srvRanges[1];
-	srvRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0); // Albedo, Normal, Metallic Roughess, Ambient Occlusion
+	CD3DX12_DESCRIPTOR_RANGE1 textureRanges[1];
+	// Albedo, Normal, Metallic Roughess, Ambient Occlusion, Emissive //
+	textureRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE1 skydomeRange[1];
 	skydomeRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 1); 
@@ -88,7 +89,7 @@ void SceneStage::CreatePipeline()
 	rootParameters[0].InitAsConstants(48, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); // MVP, Model, Light
 	rootParameters[1].InitAsConstants(3, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX); // Scene info ( Camera... etc. ) 
 	rootParameters[2].InitAsDescriptorTable(1, &cbvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Lighting data
-	rootParameters[3].InitAsDescriptorTable(1, &srvRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
+	rootParameters[3].InitAsDescriptorTable(1, &textureRanges[0], D3D12_SHADER_VISIBILITY_PIXEL); // Textures
 	rootParameters[4].InitAsDescriptorTable(1, &skydomeRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // Skydome
 	rootParameters[5].InitAsDescriptorTable(1, &shadowRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // Shadow
 	rootParameters[6].InitAsDescriptorTable(1, &materialRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // material

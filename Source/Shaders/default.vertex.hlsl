@@ -25,6 +25,7 @@ struct VertexShaderOutput
 {
 	float3 Color : Color;
     float3x3 TBN : TBN;
+    float3 Normal : Normal;
     float3 FragPosition : FragPosition;
     float4 FragLight : FragLight;
     float3 CameraPosition : CameraPosition;
@@ -43,6 +44,7 @@ VertexShaderOutput main(VertexPosColor IN)
     float3 biTangent = cross(normal, tangent);
     float3x3 TBN = float3x3(tangent, biTangent, normal);
     OUT.TBN = TBN;
+    OUT.Normal = normal;
     
     OUT.FragPosition = mul(Transform.Model, float4(IN.Position, 1.0f)).rgb;
     OUT.FragLight = mul(Transform.Light, float4(OUT.FragPosition, 1.0f));

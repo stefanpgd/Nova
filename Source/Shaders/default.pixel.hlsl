@@ -2,6 +2,7 @@ struct PixelIN
 {
     float3 Color : Color;
     float3x3 TBN : TBN;
+    float3 Normal : Normal;
     float3 FragPosition : FragPosition;
     float4 FragLight : FragLight;
     float3 CameraPosition : CameraPosition;
@@ -28,10 +29,11 @@ struct MaterialData
     bool hasNormal;
     bool hasMetallicRoughness;
     bool hasOclussion;
+    bool hasEmission;
     
-    uint OclussionChannel;
-    uint MetallicChannel;
-    uint RoughnessChannel;
+    int OclussionChannel;
+    int RoughnessChannel;
+    int MetallicChannel;
 };
 ConstantBuffer<MaterialData> material : register(b0, space2);
 
@@ -39,6 +41,7 @@ Texture2D Diffuse : register(t0);
 Texture2D Normal : register(t1);
 Texture2D MetallicRoughness : register(t2);
 Texture2D AmbientOcclusion : register(t3);
+Texture2D Emissive : register(t4);
 
 Texture2D Skydome : register(t0, space1);
 Texture2D ShadowMap : register(t1, space1);
@@ -144,17 +147,51 @@ float Fd_Burley(float NoV, float NoL, float LoH, float roughness)
 }
 
 float4 main(PixelIN IN) : SV_TARGET
-{
-    float3 albedo = float3(0.0, 0.0, 0.0);
-    albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
+{    
+    float3 albedo = IN.Color;
+    float alpha = 1.0;
+    float3 ambient = float3(0.0, 0.0, 0.0);
+    float3 emission = float3(0.0, 0.0, 0.0);
     
-    float metallic = MetallicRoughness.Sample(LinearSampler, IN.TexCoord).b;
-    float roughness = MetallicRoughness.Sample(LinearSampler, IN.TexCoord).g;
-    float alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
+    float3 normal = IN.Normal;
     
-    float3 tangentNormal = Normal.Sample(LinearSampler, IN.TexCoord).rgb * 2.0 - float3(1.0, 1.0, 1.0);
+    float metallic = 0.0;
+    float roughness = 0.0;
+    float ambientOcclusion = 1.0;
     
-    float3 n = normalize(mul(tangentNormal, IN.TBN));
+    if(material.hasAlbedo)
+    {
+        albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
+        alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
+        
+        ambient = albedo * 0.125;
+    }
+    
+    if(material.hasNormal)
+    {
+        float3 tangentNormal = Normal.Sample(LinearSampler, IN.TexCoord).rgb * 2.0 - float3(1.0, 1.0, 1.0);
+        normal = normalize(mul(tangentNormal, IN.TBN));
+    }
+    
+    if(material.hasMetallicRoughness)
+    {
+        float3 MR = MetallicRoughness.Sample(LinearSampler, IN.TexCoord).rgb;
+        
+        metallic = MR[material.MetallicChannel];
+        roughness = MR[material.RoughnessChannel];
+    }
+    
+    if(material.hasOclussion)
+    {
+        ambientOcclusion = AmbientOcclusion.Sample(LinearSampler, IN.TexCoord).r;
+        ambient = 0.125 * albedo * ambientOcclusion;
+    }
+    
+    if (material.hasEmission)
+    {
+        emission = Emissive.Sample(LinearSampler, IN.TexCoord).rgb;
+    }
+   
     float3 v = normalize(IN.CameraPosition - IN.FragPosition);
     
     // Determine if its a dielectric or a conductor based on the metallic parameter [0, 1]
@@ -171,16 +208,16 @@ float4 main(PixelIN IN) : SV_TARGET
     float3 radiance = float3(1.0, 1.0, 1.0) * directionalIntensity;
     
     // Cook-Torrance BRDF ( Fr )
-    float D = D_GGX(n, h, roughness);
-    float G = G_Smith(n, v, l, roughness);
+    float D = D_GGX(normal, h, roughness);
+    float G = G_Smith(normal, v, l, roughness);
     float3 F = F_Shlick(max(dot(h, v), 0.0), f0);
     
     float3 DGF = F * (D * G);
-    float denom = 4.0 * max(dot(n, v), 0.0) * max(dot(n, l), 0.0) + 0.0001;
+    float denom = 4.0 * max(dot(normal, v), 0.0) * max(dot(normal, l), 0.0) + 0.0001;
     float3 Fr = DGF / denom;
     
-    float NoV = abs(dot(n, v)) + 1e-5;
-    float NoL = clamp(dot(n, l), 0.0, 1.0);
+    float NoV = abs(dot(normal, v)) + 1e-5;
+    float NoL = clamp(dot(normal, l), 0.0, 1.0);
     float LoH = clamp(dot(l, h), 0.0, 1.0);
     float Fd = Fd_Burley(NoV, NoL, LoH, roughness);
     
@@ -191,35 +228,21 @@ float4 main(PixelIN IN) : SV_TARGET
     // Outgoing Irradiance
     Lo = (kD * albedo * Fd + Fr) * radiance * NoL;
     
+    float3 color = Lo;
     
-    float3 ambient = 0.0;
-    
-    if(material.hasOclussion)
-    {
-        ambient = 0.3 * albedo * AmbientOcclusion.Sample(LinearSampler, IN.TexCoord).r;
-    }
-    else
-    {
-        ambient = 0.05 * albedo;
-    }
-    
-    float3 color = ambient + Lo;
-    
-    float shadow = GetShadow(IN, n);
+    float shadow = GetShadow(IN, normal);
     float shadowStrength = min(shadow, 0.8);
     color *= (1.0 - shadowStrength);
+    color += ambient;
     
     color = clamp(color, float3(0.0, 0.0, 0.0), float3(1.0, 1.0, 1.0));
     
-    //return float4(float3(ambient), alpha);
-    
-    
-    float x = 0.0;
-    
-    if(material.hasOclussion)
+    if(!any(emission))
     {
-        x = 1.0;
+       return float4(float3(color), alpha);
     }
-    
-    return float4(float3(x, x, x), 1.0);
+    else
+    {
+        return float4(float3(emission), 1.0);
+    }
 }

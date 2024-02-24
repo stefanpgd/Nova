@@ -25,10 +25,11 @@ struct Material
 	int hasNormal;
 	int hasMetallicRoughness;
 	int hasOcclusion;
+	int hasEmissive;
 
-	unsigned int oChannel = 0;
-	unsigned int rChannel = 1;
-	unsigned int mChannel = 2;
+	int oChannel = 0;
+	int rChannel = 1;
+	int mChannel = 2;
 
 	// GPU Memory alignment //
 	double stub[28];
@@ -80,6 +81,7 @@ private:
 	Texture* normalTexture = nullptr;
 	Texture* metallicRoughnessTexture = nullptr;
 	Texture* occlusionTexture = nullptr;
+	Texture* emissiveTexture = nullptr;
 	bool hasTextures = false;
 
 	int materialCBVIndex = -1;
