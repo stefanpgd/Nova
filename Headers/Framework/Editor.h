@@ -4,6 +4,8 @@
 #include <vector>
 
 class Scene;
+class Model;
+class Texture;
 
 // TODO: In the future, if we get many more windows
 // make an interface for an editor Window, then loop over
@@ -21,10 +23,12 @@ private:
 	void ModelSelectionWindow();
 	void StatisticsWindow();
 	void LightsWindow();
-
-	// TODO: Replace scroll-down structure with a Drop-Down 
-	// select mode like Unity/Unreal
 	void TransformWindow();
+
+	void HierachyWindow();
+	void DetailsWindow();
+
+	void TextureColumnHighlight(Texture* texture, std::string name);
 
 	void LoadModelFilePaths(std::string path, std::string originalPath);
 	void ImGuiStyleSettings();
@@ -41,4 +45,8 @@ private:
 	std::vector<std::string> modelFilePaths;
 	std::vector<std::string> displayNames;
 	unsigned int currentModelID = 0;
+
+	// Scene Hierachy //
+	Model* hierachySelectedModel = nullptr;
+
 };

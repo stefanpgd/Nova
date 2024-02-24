@@ -2,6 +2,7 @@
 
 #include <tiny_gltf.h>
 #include <d3d12.h>
+#include <d3dx12.h>
 #include <wrl.h>
 #include <wincrypt.h>
 using namespace Microsoft::WRL;
@@ -16,6 +17,7 @@ public:
 	~Texture();
 
 	int GetSRVIndex();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetSRV();
 	D3D12_GPU_VIRTUAL_ADDRESS GetGPULocation();
 	ComPtr<ID3D12Resource> GetResource();
 

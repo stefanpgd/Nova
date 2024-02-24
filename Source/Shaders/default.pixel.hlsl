@@ -34,6 +34,11 @@ struct MaterialData
     int OclussionChannel;
     int RoughnessChannel;
     int MetallicChannel;
+    
+    bool useTextures;
+    float3 Color;
+    float Metallic;
+    float Roughness;
 };
 ConstantBuffer<MaterialData> material : register(b0, space2);
 
@@ -159,37 +164,46 @@ float4 main(PixelIN IN) : SV_TARGET
     float roughness = 0.0;
     float ambientOcclusion = 1.0;
     
-    if(material.hasAlbedo)
+    if(material.useTextures)
     {
-        albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
-        alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
+        if (material.hasAlbedo)
+        {
+            albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
+            alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
         
-        ambient = albedo * 0.125;
-    }
+            ambient = albedo * 0.125;
+        }
     
-    if(material.hasNormal)
-    {
-        float3 tangentNormal = Normal.Sample(LinearSampler, IN.TexCoord).rgb * 2.0 - float3(1.0, 1.0, 1.0);
-        normal = normalize(mul(tangentNormal, IN.TBN));
-    }
+        if (material.hasNormal)
+        {
+            float3 tangentNormal = Normal.Sample(LinearSampler, IN.TexCoord).rgb * 2.0 - float3(1.0, 1.0, 1.0);
+            normal = normalize(mul(tangentNormal, IN.TBN));
+        }
     
-    if(material.hasMetallicRoughness)
-    {
-        float3 MR = MetallicRoughness.Sample(LinearSampler, IN.TexCoord).rgb;
+        if (material.hasMetallicRoughness)
+        {
+            float3 MR = MetallicRoughness.Sample(LinearSampler, IN.TexCoord).rgb;
         
-        metallic = MR[material.MetallicChannel];
-        roughness = MR[material.RoughnessChannel];
-    }
+            metallic = MR[material.MetallicChannel];
+            roughness = MR[material.RoughnessChannel];
+        }
     
-    if(material.hasOclussion)
-    {
-        ambientOcclusion = AmbientOcclusion.Sample(LinearSampler, IN.TexCoord).r;
-        ambient = 0.125 * albedo * ambientOcclusion;
-    }
+        if (material.hasOclussion)
+        {
+            ambientOcclusion = AmbientOcclusion.Sample(LinearSampler, IN.TexCoord).r;
+            ambient = 0.125 * albedo * ambientOcclusion;
+        }
     
-    if (material.hasEmission)
+        if (material.hasEmission)
+        {
+            emission = Emissive.Sample(LinearSampler, IN.TexCoord).rgb;
+        }
+    }
+    else
     {
-        emission = Emissive.Sample(LinearSampler, IN.TexCoord).rgb;
+        albedo = material.Color;
+        metallic = material.Metallic;
+        roughness = material.Roughness;
     }
    
     float3 v = normalize(IN.CameraPosition - IN.FragPosition);

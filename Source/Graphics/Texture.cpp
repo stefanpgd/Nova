@@ -45,6 +45,12 @@ int Texture::GetSRVIndex()
 	return srvIndex;
 }
 
+CD3DX12_GPU_DESCRIPTOR_HANDLE Texture::GetSRV()
+{
+	DXDescriptorHeap* SRVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	return SRVHeap->GetGPUHandleAt(srvIndex);
+}
+
 D3D12_GPU_VIRTUAL_ADDRESS Texture::GetGPULocation()
 {
 	return textureResource->GetGPUVirtualAddress();

@@ -14,7 +14,7 @@ Model::Model(const std::string& filePath)
 	std::string error;
 	std::string warning;
 
-	Name = filePath.substr(filePath.find_last_of("\\") + 1);
+	Name = filePath.substr(filePath.find_last_of('\\') + 1);
 
 	// Tiny glTF provides us with a model
 	// The model structure contains EVERYTHING already neatly prepared in vectors.
@@ -110,7 +110,9 @@ void Model::TraverseRootNodes(tinygltf::Model& model)
 
 			for(tinygltf::Primitive& primitive : mesh.primitives)
 			{
-				meshes.push_back(new Mesh(model, primitive, transform));
+				Mesh* m = new Mesh(model, primitive, transform);
+				m->Name = mesh.name;
+				meshes.push_back(m);
 			}
 		}
 
@@ -152,7 +154,9 @@ void Model::TraverseChildNodes(tinygltf::Model& model, tinygltf::Node& node, con
 
 		for(tinygltf::Primitive& primitive : mesh.primitives)
 		{
-			meshes.push_back(new Mesh(model, primitive, childNodeTransform));
+			Mesh* m = new Mesh(model, primitive, childNodeTransform);
+			m->Name = mesh.name;
+			meshes.push_back(m);
 		}
 	}
 

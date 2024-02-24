@@ -3,7 +3,10 @@
 
 #include "Utilities/Logger.h"
 #include "Graphics/Model.h"
+#include "Graphics/Mesh.h"
+#include "Graphics/Texture.h"
 
+#include <d3d12.h>
 #include <imgui.h>
 #include <filesystem>
 
@@ -24,6 +27,9 @@ void Editor::Update(float deltaTime)
 	StatisticsWindow();
 	TransformWindow();
 	LightsWindow();
+
+	HierachyWindow();
+	DetailsWindow();
 }
 
 void Editor::SetScene(Scene* newScene)
@@ -108,22 +114,130 @@ void Editor::LightsWindow()
 	ImGui::End();
 }
 
+void Editor::HierachyWindow()
+{
+	ImGui::Begin("Scene Hierachy");
+	ImGui::Indent(8.0f);
+
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.05f, 0.05f, 0.05f, 1.0f));
+
+	for(int i = 0; i < scene->models.size(); i++)
+	{
+		ImGui::PushID(i);
+		ImGui::Bullet();
+
+		Model* model = scene->models[i];
+		bool isSelected = model == hierachySelectedModel;
+		if(ImGui::Selectable(model->Name.c_str(), isSelected))
+		{
+			hierachySelectedModel = model;
+		}
+
+		if(isSelected)
+		{
+			ImGui::SetItemDefaultFocus();
+		}
+
+		ImGui::PopID();
+	}
+
+	ImGui::PopStyleColor();
+
+	ImGui::Unindent(8.0f);
+	ImGui::End();
+}
+
+void Editor::DetailsWindow()
+{
+	if(!hierachySelectedModel)
+	{
+		return;
+	}
+
+	Model* model = hierachySelectedModel;
+	Mesh* mesh = model->GetMesh(0);
+	Material& material = model->GetMesh(0)->Material;
+
+	ImGui::Begin("Details");
+	ImGui::SeparatorText(model->Name.c_str());
+
+	ImGui::SeparatorText("Transform");
+	ImGui::DragFloat3("Position:", &model->Transform.Position[0], 0.05f);
+	ImGui::DragFloat3("Rotation:", &model->Transform.Rotation[0], 0.05f);
+	ImGui::DragFloat3("Scale:", &model->Transform.Scale[0], 0.01f, 0.0f, 10000.0f);
+	ImGui::Separator();
+
+
+	ImGui::SeparatorText("Material Settings");
+	bool materialUpdated = false;
+
+	bool useTextures = material.useTextures;
+	if(ImGui::Checkbox("Use Textures", &useTextures))
+	{
+		material.useTextures = useTextures;
+		materialUpdated = true;
+	}
+
+	if(!useTextures)
+	{
+		if(ImGui::ColorEdit3("Color", &material.Color[0])) { materialUpdated = true; }
+		if(ImGui::SliderFloat("Metallic", &material.Metallic, 0.0f, 1.0f)) { materialUpdated = true; }
+		if(ImGui::SliderFloat("Roughness", &material.Roughness, 0.0f, 1.0f)) { materialUpdated = true; }
+	}
+
+	if(ImGui::SliderInt("Occlusion Channel", &material.oChannel, 0, 2)) { materialUpdated = true; }
+	if(ImGui::SliderInt("Roughness Channel", &material.rChannel, 0, 2)) { materialUpdated = true; }
+	if(ImGui::SliderInt("Metallic Channel", &material.mChannel, 0, 2)) { materialUpdated = true; }
+
+	ImGui::Separator();
+
+	if(materialUpdated)
+	{
+		std::vector<Mesh*> meshes = model->GetMeshes();
+
+		for(Mesh* mesh : meshes)
+		{
+			mesh->Material.oChannel = material.oChannel;
+			mesh->Material.rChannel = material.rChannel;
+			mesh->Material.mChannel = material.mChannel;
+
+			mesh->UpdateMaterialData();
+		}
+	}
+
+	if(mesh->HasTextures())
+	{
+		ImGui::SeparatorText("Textures");
+		TextureColumnHighlight(mesh->albedoTexture, "Albedo");
+		TextureColumnHighlight(mesh->normalTexture, "Normal");
+		TextureColumnHighlight(mesh->metallicRoughnessTexture, "Metallic Roughness");
+		TextureColumnHighlight(mesh->occlusionTexture, "Oclussion");
+		TextureColumnHighlight(mesh->emissiveTexture, "Emissive");
+		ImGui::Separator();
+	}
+
+	ImGui::End();
+}
+
+void Editor::TextureColumnHighlight(Texture* texture, std::string name)
+{
+	ImGui::Separator();
+	ImGui::Columns(2);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle = texture->GetSRV();
+	ImGui::Image((ImTextureID)gpuHandle.ptr, ImVec2(32, 32));
+	ImGui::NextColumn();
+	ImGui::Text(name.c_str());
+
+	ImGui::Columns(1);
+	ImGui::Separator();
+}
+
 void Editor::TransformWindow()
 {
 	ImGui::Begin("Transforms");
 
-	for(int i = 0; i < scene->models.size(); i++)
-	{
-		Model* model = scene->models[i];
 
-		ImGui::SeparatorText(model->Name.c_str());
-
-		ImGui::PushID(i);
-		ImGui::DragFloat3("Position:", &model->Transform.Position[0], 0.05f);
-		ImGui::DragFloat3("Rotation:", &model->Transform.Rotation[0], 0.05f);
-		ImGui::DragFloat3("Scale:", &model->Transform.Scale[0], 0.01f, 0.0f, 10000.0f);
-		ImGui::PopID();
-	}
 
 	ImGui::End();
 }

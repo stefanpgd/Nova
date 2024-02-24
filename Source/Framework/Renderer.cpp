@@ -54,7 +54,7 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	device = new DXDevice();
-	CBVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1000, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	CBVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 5000, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	DSVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 5);
 	RTVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 10);
 
@@ -74,7 +74,7 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 	sceneStage->SetSkydome(skydomeStage->GetSkydomeHandle());
 
 	// TODO: Move to scene
-	this->scene->AddModel("Assets/Models/GroundPlane/plane.gltf");
+	this->scene->AddModel("Assets/Models/GroundPlane\\plane.gltf");
 }
 
 void Renderer::Update(float deltaTime) 

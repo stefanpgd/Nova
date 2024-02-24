@@ -31,8 +31,14 @@ struct Material
 	int rChannel = 1;
 	int mChannel = 2;
 
+	// Customize //
+	int useTextures = 1;
+	glm::vec3 Color = glm::vec3(1.0f, 1.0f, 1.0f);
+	float Metallic = 0.0f;
+	float Roughness = 0.0f;
+
 	// GPU Memory alignment //
-	double stub[28];
+	double stub[25];
 };
 
 class Texture;
@@ -64,6 +70,17 @@ private:
 	void ApplyNodeTransform(const glm::mat4& transform);
 	void UploadBuffers();
 
+public:
+	std::string Name;
+	Material Material;
+
+	// Texture & Material Data //
+	Texture* albedoTexture = nullptr;
+	Texture* normalTexture = nullptr;
+	Texture* metallicRoughnessTexture = nullptr;
+	Texture* occlusionTexture = nullptr;
+	Texture* emissiveTexture = nullptr;
+
 private:
 	// Vertex & Index Data //
 	ComPtr<ID3D12Resource> vertexBuffer;
@@ -76,15 +93,9 @@ private:
 	std::vector<unsigned int> indices;
 	unsigned int indicesCount = 0;
 
-	// Texture & Material Data //
-	Texture* albedoTexture = nullptr;
-	Texture* normalTexture = nullptr;
-	Texture* metallicRoughnessTexture = nullptr;
-	Texture* occlusionTexture = nullptr;
-	Texture* emissiveTexture = nullptr;
+
 	bool hasTextures = false;
 
 	int materialCBVIndex = -1;
-	Material material;
 	ComPtr<ID3D12Resource> materialBuffer;
 };

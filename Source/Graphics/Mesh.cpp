@@ -49,7 +49,7 @@ void Mesh::UpdateMaterialData()
 		materialCBVIndex = CBVHeap->GetNextAvailableIndex();
 	}
 
-	UpdateInFlightCBV(materialBuffer, materialCBVIndex, 1, sizeof(Material), &material);
+	UpdateInFlightCBV(materialBuffer, materialCBVIndex, 1, sizeof(Material), &Material);
 }
 
 const D3D12_VERTEX_BUFFER_VIEW& Mesh::GetVertexBufferView()
@@ -205,11 +205,11 @@ void Mesh::LoadMaterial(tinygltf::Model& model, tinygltf::Primitive& primitive)
 	int occlusionID = mat.occlusionTexture.index;
 	int emissiveID = mat.emissiveTexture.index;
 
-	LoadTexture(model, &albedoTexture, albedoID, material.hasAlbedo);
-	LoadTexture(model, &normalTexture, normalID, material.hasNormal);
-	LoadTexture(model, &metallicRoughnessTexture, metallicRoughnessID, material.hasMetallicRoughness);
-	LoadTexture(model, &occlusionTexture, occlusionID, material.hasOcclusion);
-	LoadTexture(model, &emissiveTexture, emissiveID, material.hasEmissive);
+	LoadTexture(model, &albedoTexture, albedoID, Material.hasAlbedo);
+	LoadTexture(model, &normalTexture, normalID, Material.hasNormal);
+	LoadTexture(model, &metallicRoughnessTexture, metallicRoughnessID, Material.hasMetallicRoughness);
+	LoadTexture(model, &occlusionTexture, occlusionID, Material.hasOcclusion);
+	LoadTexture(model, &emissiveTexture, emissiveID, Material.hasEmissive);
 
 	// Incase a mesh is loaded through a TinyglTF primitive, it is assumed
 	// either textures or colors were present, when the other Mesh constructor is used
