@@ -72,6 +72,7 @@ float GetShadow(PixelIN IN, float3 normal)
     float3 lightDir = normalize(float3(0.675, -0.738, 0.0f));
     float bias = max(0.001 * (1.0 - dot(normal, lightDir)), 0.0001);
     
+    // TODO: Add Gaussian filtering to this
     float shadow = 0.0;
     for (int x = -1; x <= 1; ++x)
     {
@@ -170,11 +171,9 @@ float4 main(PixelIN IN) : SV_TARGET
         if (material.hasAlbedo)
         {
             albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
-        
-            if(alpha > 0.99)
-            {
-                alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
-            }
+            albedo = pow(albedo, 2.2);
+            
+            alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
             
             ambient = albedo * 0.05;
         }
@@ -253,6 +252,11 @@ float4 main(PixelIN IN) : SV_TARGET
     float shadowStrength = min(shadow, 0.8);
     color *= (1.0 - shadowStrength);
     color += ambient;
+    
+    color = color / (color + float3(1.0, 1.0, 1.0));
+    
+    float g = 1.0 / 2.2;
+    color = pow(color, float3(g, g, g));
     
     color = clamp(color, float3(0.0, 0.0, 0.0), float3(1.0, 1.0, 1.0));
     
