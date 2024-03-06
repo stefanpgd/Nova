@@ -222,7 +222,7 @@ float4 main(PixelIN IN) : SV_TARGET
     float3 h = normalize(v + l);
     
     // For now we only use our directional light //
-    float directionalIntensity = 4.0;
+    float directionalIntensity = 6.0;
     float3 radiance = float3(1.0, 1.0, 1.0) * directionalIntensity;
     
     // Cook-Torrance BRDF ( Fr )
