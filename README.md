@@ -1,6 +1,6 @@
 # Nova - A DirectX 12 Renderer 
-</p>
-<table>
+
+<table align="center">
 <tr>
 <td>
   
@@ -18,6 +18,7 @@ This renderer is a personal playground for myself to:
 </td>
 </tr>
 </table>
+</p>
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/stefanpgd/Nova/main/Assets/Logo/NovaCoverHQ.png">
