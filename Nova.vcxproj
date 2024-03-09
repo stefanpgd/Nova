@@ -145,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Graphics\HDRi.cpp" />
     <ClCompile Include="Source\Graphics\DepthBuffer.cpp" />
     <ClCompile Include="Source\Graphics\RenderStages\ShadowStage.cpp" />
     <ClCompile Include="Source\Framework\Scene.cpp" />
@@ -185,6 +186,7 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Headers\Graphics\HDRi.h" />
     <ClInclude Include="Headers\Graphics\DepthBuffer.h" />
     <ClInclude Include="Headers\Graphics\Camera.h" />
     <ClInclude Include="Dependencies\ImGui\imconfig.h" />

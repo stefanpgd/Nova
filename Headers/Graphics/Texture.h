@@ -4,7 +4,6 @@
 #include <d3d12.h>
 #include <d3dx12.h>
 #include <wrl.h>
-#include <wincrypt.h>
 using namespace Microsoft::WRL;
 
 class Texture

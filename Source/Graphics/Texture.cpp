@@ -28,6 +28,8 @@ Texture::Texture(const std::string& filePath)
 	}
 
 	UploadData(buffer, width, height);
+
+	stbi_image_free(buffer);
 }
 
 Texture::Texture(unsigned char* data, int width, int height)

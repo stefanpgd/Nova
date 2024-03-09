@@ -87,6 +87,15 @@ float GetShadow(PixelIN IN, float3 normal)
     return shadow;
 }
 
+float3 GetSkydome(float3 normal)
+{
+    float3 n = normalize(normal);
+    float u = atan2(n.x, n.z) / (2.0 * PI) + 0.5;
+    float v = n.y * 0.5 + 0.5;
+    
+    return Skydome.Sample(LinearSampler, float2(u, v)).rgb;
+}
+
 float3 GetSkydomeColor(PixelIN IN, float3 normal)
 {
     float3 incoming = normalize(IN.FragPosition - IN.CameraPosition);
@@ -171,7 +180,7 @@ float4 main(PixelIN IN) : SV_TARGET
         if (material.hasAlbedo)
         {
             albedo = Diffuse.Sample(LinearSampler, IN.TexCoord).rgb;
-            albedo = pow(albedo, 2.2);
+            albedo = pow(abs(albedo), 2.2);
             
             alpha = Diffuse.Sample(LinearSampler, IN.TexCoord).a;
             
@@ -256,7 +265,7 @@ float4 main(PixelIN IN) : SV_TARGET
     color = color / (color + float3(1.0, 1.0, 1.0));
     
     float g = 1.0 / 2.2;
-    color = pow(color, float3(g, g, g));
+    color = pow(abs(color), float3(g, g, g));
     
     color = clamp(color, float3(0.0, 0.0, 0.0), float3(1.0, 1.0, 1.0));
     

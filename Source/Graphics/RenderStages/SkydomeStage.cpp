@@ -10,6 +10,9 @@
 #include "Graphics/DXPipeline.h"
 #include "Graphics/DXRootSignature.h"
 #include "Graphics/DXDescriptorHeap.h"
+#include "Graphics/HDRi.h"
+
+HDRi* testDome;
 
 SkydomeStage::SkydomeStage(Window* window, Scene* scene) : RenderStage(window), scene(scene)
 {
@@ -19,6 +22,7 @@ SkydomeStage::SkydomeStage(Window* window, Scene* scene) : RenderStage(window), 
 	skydomeMesh = skydome->GetMesh(0);
 
 	skydomeTexture = new Texture("Assets/HDRI/testDome.hdr");
+	testDome = new HDRi("Assets/HDRI/testDome.hdr");
 }
 
 void SkydomeStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
@@ -30,7 +34,7 @@ void SkydomeStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 	ComPtr<ID3D12Resource> screenBuffer = window->GetCurrentScreenBuffer();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE screenRTV = window->GetCurrentScreenRTV();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = window->GetDepthDSV();
-	CD3DX12_GPU_DESCRIPTOR_HANDLE skydomeData = CBVHeap->GetGPUHandleAt(skydomeTexture->GetSRVIndex());
+	CD3DX12_GPU_DESCRIPTOR_HANDLE skydomeData = CBVHeap->GetGPUHandleAt(testDome->GetSRVIndex());
 	Camera& camera = scene->GetCamera();
 
 	glm::mat4 view = glm::lookAt(glm::vec3(0.0f), camera.GetForwardVector(), camera.GetUpwardVector());
@@ -64,7 +68,7 @@ void SkydomeStage::SetScene(Scene* newScene)
 CD3DX12_GPU_DESCRIPTOR_HANDLE SkydomeStage::GetSkydomeHandle()
 {
 	DXDescriptorHeap* CBVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	return CBVHeap->GetGPUHandleAt(skydomeTexture->GetSRVIndex());
+	return CBVHeap->GetGPUHandleAt(testDome->GetSRVIndex());
 }
 
 void SkydomeStage::CreatePipeline()
