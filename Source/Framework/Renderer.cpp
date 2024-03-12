@@ -81,6 +81,7 @@ void Renderer::Update(float deltaTime)
 { 
 	shadowStage->Update(deltaTime);
 
+	skydomeStage->SetScene(scene);
 	// TODO: Maybe record render times in here, have a proper MS count etc.
 }
 
@@ -207,5 +208,10 @@ DXDescriptorHeap* DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type)
 	// Invalid type passed
 	assert(false && "Descriptor type passed isn't a valid or created type!");
 	return nullptr;
+}
+
+Window* DXAccess::GetWindow()
+{
+	return window;
 }
 #pragma endregion

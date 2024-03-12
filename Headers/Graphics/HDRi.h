@@ -5,20 +5,36 @@
 #include <wrl.h>
 using namespace Microsoft::WRL;
 
-class HDRi 
+class DXRootSignature;
+class DXPipeline;
+
+class HDRI 
 {
 public:
-	HDRi(const std::string& filePath);
+	HDRI(const std::string& filePath);
 
 	int GetSRVIndex();
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetSRV();
 	D3D12_GPU_VIRTUAL_ADDRESS GetGPULocation();
 	ComPtr<ID3D12Resource> GetResource();
 
+	void HDRIDebugWindow();
+
 private:
-	void UploadData(float* data, int width, int height);
+	void UploadBuffer(float* data, int width, int height, 
+		ComPtr<ID3D12Resource>& resource, int& index);
+
+	void CreatePipeline();
+
+	void ConvoluteHDRI();
 
 private:
 	ComPtr<ID3D12Resource> hdriResource;
-	int srvIndex = 0;
+	ComPtr<ID3D12Resource> irradianceResource;
+
+	DXRootSignature* rootSignature;
+	DXPipeline* pipeline;
+
+	int hdriIndex = 0;
+	int irradianceIndex = 0;
 };

@@ -108,7 +108,7 @@
     <ClCompile Include="Source\Graphics\RenderStages\ShadowStage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Graphics\HDRi.cpp">
+    <ClCompile Include="Source\Graphics\HDRI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -221,7 +221,7 @@
     <ClInclude Include="Headers\Graphics\RenderStages\ShadowStage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Headers\Graphics\HDRi.h">
+    <ClInclude Include="Headers\Graphics\HDRI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -233,5 +233,7 @@
     <FxCompile Include="Source\Shaders\skydome.vertex.hlsl" />
     <FxCompile Include="Source\Shaders\skydome.pixel.hlsl" />
     <FxCompile Include="Source\Shaders\shadow.vertex.hlsl" />
+    <FxCompile Include="Source\Shaders\hdriConvolution.vertex.hlsl" />
+    <FxCompile Include="Source\Shaders\hdriConvolution.pixel.hlsl" />
   </ItemGroup>
 </Project>

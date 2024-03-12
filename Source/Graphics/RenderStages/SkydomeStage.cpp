@@ -10,9 +10,9 @@
 #include "Graphics/DXPipeline.h"
 #include "Graphics/DXRootSignature.h"
 #include "Graphics/DXDescriptorHeap.h"
-#include "Graphics/HDRi.h"
+#include "Graphics/HDRI.h"
 
-HDRi* testDome;
+HDRI* testDome;
 
 SkydomeStage::SkydomeStage(Window* window, Scene* scene) : RenderStage(window), scene(scene)
 {
@@ -22,7 +22,7 @@ SkydomeStage::SkydomeStage(Window* window, Scene* scene) : RenderStage(window), 
 	skydomeMesh = skydome->GetMesh(0);
 
 	skydomeTexture = new Texture("Assets/HDRI/testDome.hdr");
-	testDome = new HDRi("Assets/HDRI/testDome.hdr");
+	testDome = new HDRI("Assets/HDRI/testDome.hdr");
 }
 
 void SkydomeStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
@@ -63,6 +63,9 @@ void SkydomeStage::RecordStage(ComPtr<ID3D12GraphicsCommandList2> commandList)
 void SkydomeStage::SetScene(Scene* newScene)
 {
 	scene = newScene;
+
+	// SUPER TEMP //
+	testDome->HDRIDebugWindow();
 }
 
 CD3DX12_GPU_DESCRIPTOR_HANDLE SkydomeStage::GetSkydomeHandle()
