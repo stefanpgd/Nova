@@ -20,8 +20,8 @@ ShadowStage::ShadowStage(Window* window, Scene* scene) : RenderStage(window), sc
 	viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, 
 		static_cast<float>(depthBufferWidth), static_cast<float>(depthBufferHeight));
 
-	lightPosition = glm::vec3(-2, 11.000, 15.0);
-	lightDirection = glm::normalize(glm::vec3(0.0, -0.738, -0.675));
+	lightPosition = glm::vec3(6, 4, 1.0);
+	lightDirection = glm::normalize(glm::vec3(-0.8, -0.5, -0.1));
 
 	CreatePipeline();
 }

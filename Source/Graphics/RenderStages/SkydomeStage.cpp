@@ -71,7 +71,7 @@ void SkydomeStage::SetScene(Scene* newScene)
 CD3DX12_GPU_DESCRIPTOR_HANDLE SkydomeStage::GetSkydomeHandle()
 {
 	DXDescriptorHeap* CBVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	return CBVHeap->GetGPUHandleAt(testDome->GetHDRiSRVIndex());
+	return CBVHeap->GetGPUHandleAt(testDome->GetIrradianceSRVIndex());
 }
 
 HDRI* SkydomeStage::GetHDRI()

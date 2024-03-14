@@ -69,7 +69,7 @@ float GetShadow(PixelIN IN, float3 normal)
     float closestDepth = ShadowMap.Sample(LinearSampler, uv).r;
     float currentDepth = projectCoords.z;
     
-    float3 lightDir = normalize(float3(0.675, -0.738, 0.0f));
+    float3 lightDir = normalize(float3(-0.8, -0.5, -0.1));
     float bias = max(0.001 * (1.0 - dot(normal, lightDir)), 0.0001);
     
     // TODO: Add Gaussian filtering to this
@@ -167,6 +167,12 @@ float Fd_Burley(float NoV, float NoL, float LoH, float roughness)
     return lightScatter * viewScatter * (1.0 / PI);
 }
 
+float3 fresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
+{
+    float a = 1.0 - roughness;
+    return F0 + (max(float3(a, a, a), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 float4 main(PixelIN IN) : SV_TARGET
 {    
     float3 albedo = IN.Color;
@@ -232,11 +238,11 @@ float4 main(PixelIN IN) : SV_TARGET
     
     float3 Lo = float3(0.0, 0.0, 0.0);
     
-    float3 l = -normalize(float3(0.0, -0.738, -0.675));
+    float3 l = -normalize(float3(-0.8, -0.5, -0.1));
     float3 h = normalize(v + l);
     
     // For now we only use our directional light //
-    float directionalIntensity = 6.0;
+    float directionalIntensity = 1.0;
     float3 radiance = float3(1.0, 1.0, 1.0) * directionalIntensity;
     
     // Cook-Torrance BRDF ( Fr )
@@ -262,10 +268,25 @@ float4 main(PixelIN IN) : SV_TARGET
     
     float3 color = Lo;
     
+    // Ambient Lighting IBL - Placeholder workaround
+    {
+        const float irradianceIntensity = 1.0;
+        
+        float3 kS = fresnelSchlickRoughness(max(NoV, 0.0), f0, roughness);
+        float3 kD = 1.0 - kS;
+        kD *= 1.0 - metallic;
+        float3 irradiance = GetSkydome(normal).rgb * irradianceIntensity;
+        float3 diffuse = irradiance * albedo;
+        float3 ambient = kD * diffuse * ambientOcclusion;
+        
+        float3 Ls = (Fr * GetSkydomeColor(IN, normal)) * irradianceIntensity  * NoL;
+        
+        color += ambient + Ls;
+    }
+    
     float shadow = GetShadow(IN, normal);
     float shadowStrength = min(shadow, 0.8);
     color *= (1.0 - shadowStrength);
-    color += ambient;
     
     color = color / (color + float3(1.0, 1.0, 1.0));
     

@@ -5,6 +5,7 @@
 #include <stb_image.h>
 
 #include <imgui.h>
+#include <glm.hpp>
 
 HDRI::HDRI(const std::string& filePath)
 {
@@ -75,6 +76,8 @@ ComPtr<ID3D12Resource> HDRI::GetIrradianceResource()
 	return irradianceResource;
 }
 
+static glm::vec3 testing = glm::vec3(0.0f, 0.0f, 0.0f);
+
 void HDRI::HDRIDebugWindow()
 {
 	DXDescriptorHeap* SRVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -90,6 +93,9 @@ void HDRI::HDRIDebugWindow()
 	ImGui::Text("HDRI - Irradiance Capture");
 	CD3DX12_GPU_DESCRIPTOR_HANDLE irradianceHandle = SRVHeap->GetGPUHandleAt(irradianceIndex);
 	ImGui::Image((ImTextureID)irradianceHandle.ptr, ImVec2(512, 256));
+
+	ImGui::DragFloat3("Tester", &testing.x, 0.001f); 
+	testing = glm::normalize(testing);
 
 	ImGui::End();
 }

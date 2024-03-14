@@ -23,7 +23,7 @@ private:
 
 private:
 	float orthoSize = 5.0f;
-	float shadowNear = 1.0f;
+	float shadowNear = 2.0f;
 	float shadowFar = 50.0f;
 
 	unsigned int depthBufferWidth = 4096;

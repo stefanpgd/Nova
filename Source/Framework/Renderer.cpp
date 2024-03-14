@@ -77,7 +77,7 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 	convolutionStage->BindHDRI(skydomeStage->GetHDRI());
 
 	// TODO: Move to scene
-	this->scene->AddModel("Assets/Models/GroundPlane\\plane.gltf");
+	//this->scene->AddModel("Assets/Models/GroundPlane\\plane.gltf");
 }
 
 void Renderer::Update(float deltaTime) 
