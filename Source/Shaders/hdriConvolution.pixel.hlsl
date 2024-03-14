@@ -3,23 +3,23 @@ struct PixelIN
     float2 TexCoord : TexCoord;
 };
 
-Texture2D screenTexture : register(t0);
+Texture2D hdriTexture : register(t0);
 SamplerState LinearSampler : register(s0);
+
+static float PI = 3.14159265359;
 
 float4 main(PixelIN IN) : SV_TARGET
 {
-    float4 sum = 0.0f;
+    // 0. Turn UV into normal direction
+    float phi = IN.TexCoord.x * (2.0 * PI);
+    float theta = (IN.TexCoord.y + 1.0) * PI;
+
+    float3 normal = float3(cos(phi) * sin(theta), cos(theta), sin(phi) * sin(theta));
     
-    for (int x = -10; x < 10; x++)
-    {
-        for (int y = -10; y < 10; y++)
-        {
-            float2 offset = float2(x * 0.001, y * 0.001);
-            sum += screenTexture.Sample(LinearSampler, IN.TexCoord + offset);
-        }
-    }
+    // Grab texture coordinates, find out current angle values
+    // Then use those base values, ADD the integral
+    // Sum up results
+    // divide accordingly, and save
     
-    sum /= 121.0;
-    
-    return float4(sum.rgb, 1.0f);
+    return float4(normal, 1.0f);
 }
