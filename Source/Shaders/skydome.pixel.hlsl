@@ -8,7 +8,7 @@ SamplerState LinearSampler : register(s0);
 
 float4 main(PixelIN IN) : SV_TARGET
 {
-    float2 uv = float2(IN.TexCoord.x + 0.77, IN.TexCoord.y);
+    float2 uv = float2(-IN.TexCoord.x + 0.48, -IN.TexCoord.y);
     float3 sky = skydome.Sample(LinearSampler, uv).rgb;
     
     float g = 1.0 / 2.2;

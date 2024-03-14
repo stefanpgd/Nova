@@ -90,8 +90,11 @@ float GetShadow(PixelIN IN, float3 normal)
 float3 GetSkydome(float3 normal)
 {
     float3 n = normalize(normal);
-    float u = atan2(n.x, n.z) / (2.0 * PI) + 0.5;
-    float v = n.y * 0.5 + 0.5;
+    float phi = atan2(n.z, n.x) + PI;
+    float theta = acos(n.y);
+    
+    float u = phi / (2 * PI);
+    float v = 1.0 - (theta / PI);
     
     return Skydome.Sample(LinearSampler, float2(u, v)).rgb;
 }
@@ -99,11 +102,13 @@ float3 GetSkydome(float3 normal)
 float3 GetSkydomeColor(PixelIN IN, float3 normal)
 {
     float3 incoming = normalize(IN.FragPosition - IN.CameraPosition);
-    float3 sampleRay = reflect(incoming, normal);
+    float3 n = reflect(incoming, normal);
     
-    float3 n = normalize(sampleRay);
-    float u = atan2(n.x, n.z) / (2.0 * PI) + 0.5;
-    float v = n.y * 0.5 + 0.5;
+    float phi = atan2(n.z, n.x) + PI;
+    float theta = acos(n.y);
+    
+    float u = phi / (2 * PI);
+    float v = 1.0 - (theta / PI);
     
     return Skydome.Sample(LinearSampler, float2(u, v)).rgb;
 }
