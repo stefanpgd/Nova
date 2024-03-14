@@ -8,8 +8,10 @@
 #include <d3dcompiler.h>
 #include <cassert>
 
+// TODO: Need that structure here for data
 DXPipeline::DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootSignature,
-	bool doAlphaBlending, bool usePixelShader, bool doBackCull) : alphaBlending(doAlphaBlending), usePixelShader(usePixelShader), doBackCull(doBackCull)
+	bool doAlphaBlending, bool usePixelShader, bool doBackCull, DXGI_FORMAT format) : 
+	alphaBlending(doAlphaBlending), usePixelShader(usePixelShader), doBackCull(doBackCull), rtvFormat(format)
 {
 	CompileShaders(vertexPath, pixelPath);
 	CreatePipelineState(rootSignature);
@@ -84,7 +86,7 @@ void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
 
 	D3D12_RT_FORMAT_ARRAY rtvFormats = {};
 	rtvFormats.NumRenderTargets = 1;
-	rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	rtvFormats.RTFormats[0] = rtvFormat;
 
 	CD3DX12_RASTERIZER_DESC rasterizerDesc = {};
 	rasterizerDesc.CullMode = doBackCull ? D3D12_CULL_MODE_BACK : D3D12_CULL_MODE_FRONT;

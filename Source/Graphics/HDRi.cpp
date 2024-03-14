@@ -1,8 +1,7 @@
 #include "Graphics/HDRI.h"
 #include "Graphics/DXUtilities.h"
 #include "Graphics/DXAccess.h"
-#include "Graphics/DXRootSignature.h"
-#include "Graphics/DXPipeline.h"
+
 #include <stb_image.h>
 
 #include <imgui.h>
@@ -25,59 +24,84 @@ HDRI::HDRI(const std::string& filePath)
 		assert(false);
 	}
 
+	this->width = width;
+	this->height = height;
+
 	// 1. Upload Environment map
 	UploadBuffer(buffer, width, height, hdriResource, hdriIndex);
+	stbi_image_free(buffer);
 
 	// 2. Allocate resource with matching dimensions to read/write to
-	float* buff = new float[width * height * 4];
+	float* buff = new float[width * height * sizeof(float)];
 	UploadBuffer(buff, width, height, irradianceResource, irradianceIndex);
+	delete[] buff;
 
-	// 3. Prepare pipeline //
-	CreatePipeline();
+	DXDescriptorHeap* rtvHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	irradianceRTVIndex = rtvHeap->GetNextAvailableIndex();
 
-	// 4. Convolute the HDRI //
-	ConvoluteHDRI();
-
-	stbi_image_free(buffer);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUHandleAt(irradianceRTVIndex);
+	DXAccess::GetDevice()->CreateRenderTargetView(irradianceResource.Get(), nullptr, rtvHandle);
 }
 
-int HDRI::GetSRVIndex()
+int HDRI::GetHDRiSRVIndex()
 {
 	return hdriIndex;
 }
 
-CD3DX12_GPU_DESCRIPTOR_HANDLE HDRI::GetSRV()
+int HDRI::GetIrradianceSRVIndex()
 {
-	DXDescriptorHeap* SRVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	return SRVHeap->GetGPUHandleAt(hdriIndex);
+	return irradianceIndex;
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS HDRI::GetGPULocation()
+CD3DX12_GPU_DESCRIPTOR_HANDLE HDRI::GetHDRISRVHandle()
 {
-	return hdriResource->GetGPUVirtualAddress();
+	DXDescriptorHeap* srvHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	return srvHeap->GetGPUHandleAt(hdriIndex);
 }
 
-ComPtr<ID3D12Resource> HDRI::GetResource()
+CD3DX12_CPU_DESCRIPTOR_HANDLE HDRI::GetIraddianceRTVHandle()
+{
+	DXDescriptorHeap* rtvHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	return rtvHeap->GetCPUHandleAt(irradianceRTVIndex);
+}
+
+ComPtr<ID3D12Resource> HDRI::GetHDRiResource()
 {
 	return hdriResource;
 }
 
+ComPtr<ID3D12Resource> HDRI::GetIrradianceResource()
+{
+	return irradianceResource;
+}
+
 void HDRI::HDRIDebugWindow()
 {
+	DXDescriptorHeap* SRVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
 	ImGui::Begin("HDRI View");
 
 	ImGui::Text("HDRI - Regular");
-	CD3DX12_GPU_DESCRIPTOR_HANDLE hdriHandle = GetSRV();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE hdriHandle = SRVHeap->GetGPUHandleAt(hdriIndex);
 	ImGui::Image((ImTextureID)hdriHandle.ptr, ImVec2(512, 256));
 
 	ImGui::Separator();
 
 	ImGui::Text("HDRI - Irradiance Capture");
-	DXDescriptorHeap* SRVHeap = DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	CD3DX12_GPU_DESCRIPTOR_HANDLE irradianceHandle = SRVHeap->GetGPUHandleAt(irradianceIndex);
 	ImGui::Image((ImTextureID)irradianceHandle.ptr, ImVec2(512, 256));
 
 	ImGui::End();
+}
+
+int HDRI::GetWidth()
+{
+	return width;
+}
+
+int HDRI::GetHeight()
+{
+	return height;
 }
 
 void HDRI::UploadBuffer(float* data, int width, int height, ComPtr<ID3D12Resource>& resource, int& index)
@@ -103,54 +127,4 @@ void HDRI::UploadBuffer(float* data, int width, int height, ComPtr<ID3D12Resourc
 	index = SRVHeap->GetNextAvailableIndex();
 
 	DXAccess::GetDevice()->CreateShaderResourceView(resource.Get(), &srvDesc, SRVHeap->GetCPUHandleAt(index));
-}
-
-void HDRI::CreatePipeline()
-{
-	CD3DX12_DESCRIPTOR_RANGE1 hdriRange[1];
-	hdriRange[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // HDRI 
-
-	CD3DX12_ROOT_PARAMETER1 skydomeRootParameters[1];
-	skydomeRootParameters[0].InitAsDescriptorTable(1, &hdriRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // Skydome Texture
-
-	rootSignature = new DXRootSignature(skydomeRootParameters, _countof(skydomeRootParameters),
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	pipeline = new DXPipeline("Source/Shaders/hdriConvolution.vertex.hlsl", 
-		"Source/Shaders/hdriConvolution.pixel.hlsl", rootSignature);
-}
-
-void HDRI::ConvoluteHDRI()
-{
-	DXCommands* commands = DXAccess::GetCommands(D3D12_COMMAND_LIST_TYPE_DIRECT);
-	commands->Flush();
-
-	//// 0. Grab all relevant variables //
-	//ComPtr<ID3D12GraphicsCommandList2> commandList = commands->GetGraphicsCommandList();
-	//ID3D12DescriptorHeap* heaps[] = { DXAccess::GetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)->GetAddress()};
-	//CD3DX12_CPU_DESCRIPTOR_HANDLE depthView = DXAccess::GetWindow()->GetDepthDSV();
-	//
-	//
-	//// 1. Clear Light DepthBuffer //
-	//commandList->ClearDepthStencilView(depthView, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-	//
-	//// 2. Bind pipeline & root // 
-	//commandList->SetGraphicsRootSignature(rootSignature->GetAddress());
-	//commandList->SetPipelineState(pipeline->GetAddress());
-	//
-	//// Bind viewport & rect, followed by the depth buffer //
-	//commandList->RSSetViewports(1, &DXAccess::GetWindow()->GetViewport());
-	//commandList->RSSetScissorRects(1, &DXAccess::GetWindow()->GetScissorRect());
-	//commandList->OMSetRenderTargets(0, nullptr, FALSE, &depthView);
-	//
-	//// 3. Use Render Target as Texture //
-	//commandList->SetGraphicsRootDescriptorTable(0, renderTexture);
-	//
-	//// 4. Bind & Render Screen Pass //
-	//commandList->IASetVertexBuffers(0, 1, &screenMesh->GetVertexBufferView());
-	//commandList->IASetIndexBuffer(&screenMesh->GetIndexBufferView());
-	//commandList->DrawIndexedInstanced(screenMesh->GetIndicesCount(), 1, 0, 0, 0);
-	//
-	//// 5. Prepare screen buffer to be presented, since this is the last stage //
-	//TransitionResource(screenBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 }

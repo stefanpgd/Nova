@@ -7,6 +7,7 @@
 class Scene;
 class Mesh;
 class Texture;
+class HDRI;
 
 class SkydomeStage : public RenderStage
 {
@@ -17,6 +18,7 @@ public:
 	void SetScene(Scene* newScene);
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetSkydomeHandle();
+	HDRI* GetHDRI();
 
 private:
 	void CreatePipeline();

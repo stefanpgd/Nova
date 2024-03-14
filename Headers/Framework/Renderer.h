@@ -13,6 +13,7 @@ class ShadowStage;
 class SceneStage;
 class ScreenStage;
 class SkydomeStage;
+class HDRIConvolutionStage;
 
 class Renderer
 {
@@ -34,6 +35,7 @@ private:
 	SceneStage* sceneStage;
 	ScreenStage* screenStage;
 	SkydomeStage* skydomeStage;
+	HDRIConvolutionStage* convolutionStage;
 
 	Scene* scene;
 };

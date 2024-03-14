@@ -25,6 +25,7 @@
 #include "Graphics/RenderStages/SceneStage.h"
 #include "Graphics/RenderStages/ScreenStage.h"
 #include "Graphics/RenderStages/SkydomeStage.h"
+#include "Graphics/RenderStages/HDRIConvolutionStage.h"
 
 #include <cassert>
 #include <imgui.h>
@@ -55,8 +56,8 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 
 	device = new DXDevice();
 	CBVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 5000, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-	DSVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 5);
-	RTVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 10);
+	DSVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 10);
+	RTVHeap = new DXDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 15);
 
 	directCommands = new DXCommands(D3D12_COMMAND_LIST_TYPE_DIRECT, Window::BackBufferCount);
 	copyCommands = new DXCommands(D3D12_COMMAND_LIST_TYPE_DIRECT, 1);
@@ -70,8 +71,10 @@ Renderer::Renderer(const std::wstring& applicationName, Scene* scene, unsigned i
 	sceneStage = new SceneStage(window, scene, shadowStage);
 	screenStage = new ScreenStage(window);
 	skydomeStage = new SkydomeStage(window, scene);
+	convolutionStage = new HDRIConvolutionStage(window);
 
 	sceneStage->SetSkydome(skydomeStage->GetSkydomeHandle());
+	convolutionStage->BindHDRI(skydomeStage->GetHDRI());
 
 	// TODO: Move to scene
 	this->scene->AddModel("Assets/Models/GroundPlane\\plane.gltf");
@@ -100,6 +103,7 @@ void Renderer::Render()
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// 3. Record Render Stages //
+	convolutionStage->RecordStage(commandList);
 	shadowStage->RecordStage(commandList);
 	sceneStage->RecordStage(commandList);
 	skydomeStage->RecordStage(commandList);
