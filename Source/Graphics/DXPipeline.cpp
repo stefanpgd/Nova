@@ -8,13 +8,10 @@
 #include <d3dcompiler.h>
 #include <cassert>
 
-// TODO: Need that structure here for data
-DXPipeline::DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootSignature,
-	bool doAlphaBlending, bool usePixelShader, bool doBackCull, DXGI_FORMAT format) : 
-	alphaBlending(doAlphaBlending), usePixelShader(usePixelShader), doBackCull(doBackCull), rtvFormat(format)
+DXPipeline::DXPipeline(const DXPipelineDescription& pipelineDescription) : description(pipelineDescription)
 {
-	CompileShaders(vertexPath, pixelPath);
-	CreatePipelineState(rootSignature);
+	CompileShaders();
+	CreatePipelineState();
 }
 
 ComPtr<ID3D12PipelineState> DXPipeline::Get()
@@ -27,11 +24,11 @@ ID3D12PipelineState* DXPipeline::GetAddress()
 	return pipeline.Get();
 }
 
-void DXPipeline::CompileShaders(const std::string& vertexPath, const std::string pixelPath)
+void DXPipeline::CompileShaders()
 {
 	// Vertex Shader //
 	ComPtr<ID3DBlob> vertexError;
-	std::wstring vertexShaderPath(vertexPath.begin(), vertexPath.end());
+	std::wstring vertexShaderPath(description.VertexPath.begin(), description.VertexPath.end());
 
 	D3DCompileFromFile(vertexShaderPath.c_str(), NULL, NULL, "main", "vs_5_1", 0, 0, &vertexShaderBlob, &vertexError);
 
@@ -44,7 +41,7 @@ void DXPipeline::CompileShaders(const std::string& vertexPath, const std::string
 
 	// Pixel Shader //
 	ComPtr<ID3DBlob> pixelError;
-	std::wstring pixelShaderPath(pixelPath.begin(), pixelPath.end());
+	std::wstring pixelShaderPath(description.PixelPath.begin(), description.PixelPath.end());
 
 	D3DCompileFromFile(pixelShaderPath.c_str(), NULL, NULL, "main", "ps_5_1", 0, 0, &pixelShaderBlob, &pixelError);
 
@@ -56,7 +53,7 @@ void DXPipeline::CompileShaders(const std::string& vertexPath, const std::string
 	}
 }
 
-void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
+void DXPipeline::CreatePipelineState()
 {
 	// Input Layout //
 	// input layouts describe to the Input Assembler what the layout of the vertex buffer is
@@ -86,14 +83,14 @@ void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
 
 	D3D12_RT_FORMAT_ARRAY rtvFormats = {};
 	rtvFormats.NumRenderTargets = 1;
-	rtvFormats.RTFormats[0] = rtvFormat;
+	rtvFormats.RTFormats[0] = description.RenderTargetFormat;
 
 	CD3DX12_RASTERIZER_DESC rasterizerDesc = {};
-	rasterizerDesc.CullMode = doBackCull ? D3D12_CULL_MODE_BACK : D3D12_CULL_MODE_FRONT;
+	rasterizerDesc.CullMode = description.DoBackCulling ? D3D12_CULL_MODE_BACK : D3D12_CULL_MODE_FRONT;
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	D3D12_RENDER_TARGET_BLEND_DESC rtBlendDesc = {};
-	rtBlendDesc.BlendEnable = alphaBlending;
+	rtBlendDesc.BlendEnable = description.DoAlphaBlending;
 	rtBlendDesc.LogicOpEnable = false;
 	rtBlendDesc.SrcBlend = D3D12_BLEND_ONE;
 	rtBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
@@ -109,7 +106,7 @@ void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
 	blendDesc.IndependentBlendEnable = false;
 	blendDesc.RenderTarget[0] = rtBlendDesc;
 
-	PSS.RootSignature = rootSignature->Get().Get();
+	PSS.RootSignature = description.RootSignature->GetAddress();
 	PSS.InputLayout = { inputLayout, _countof(inputLayout) };
 	PSS.Rasterizer = rasterizerDesc;
 	PSS.Blending = blendDesc;
@@ -118,8 +115,7 @@ void DXPipeline::CreatePipelineState(DXRootSignature* rootSignature)
 	PSS.RTVFormats = rtvFormats;
 	PSS.VS = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
 
-	// TODO: In the future, make a struct to customize settings more in-depth, rn this is inconvenient
-	if(usePixelShader)
+	if(description.UsePixelShader)
 	{
 		PSS.PS = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 	}

@@ -108,7 +108,10 @@ void ShadowStage::CreatePipeline()
 
 	rootSignature = new DXRootSignature(rootParameters, _countof(rootParameters), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-	// TODO: replace constructor with the newer one once available
-	// TODO: Test is alpha blending affects shadows, it will so test how it can be more accurate
-	pipeline = new DXPipeline("Source/Shaders/shadow.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature, false, false);
+	DXPipelineDescription description;
+	description.VertexPath = "Source/Shaders/shadow.vertex.hlsl";
+	description.RootSignature = rootSignature;
+	description.UsePixelShader = false;
+
+	pipeline = new DXPipeline(description);
 }

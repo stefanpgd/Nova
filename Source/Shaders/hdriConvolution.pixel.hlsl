@@ -38,7 +38,7 @@ float4 main(PixelIN IN) : SV_TARGET
     float3 up = normalize(cross(normal, right));
     
     float3 irradiance = float3(0.0, 0.0, 0.0);
-    float sampleDelta = 0.02; // lower the delta, the more accurate but expensive
+    float sampleDelta = 0.01; // lower the delta, the more accurate but expensive
     float sampleCount = 0;
     float maxIrradiance = 2500.0;
     
@@ -58,10 +58,6 @@ float4 main(PixelIN IN) : SV_TARGET
         }
     }
     irradiance = PI * irradiance * (1.0 / float(sampleCount));
-    //irradiance = irradiance / (irradiance + float3(1.0, 1.0, 1.0));
-    
-    //float g = 1.0 / 2.2;
-    //irradiance = pow(abs(irradiance), float3(g, g, g));
     
     // Grab texture coordinates, find out current angle values
     // Then use those base values, ADD the integral

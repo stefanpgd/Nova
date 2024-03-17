@@ -87,8 +87,13 @@ void HDRIConvolutionStage::CreatePipeline()
 	rootSignature = new DXRootSignature(skydomeRootParameters, _countof(skydomeRootParameters),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-	pipeline = new DXPipeline("Source/Shaders/hdriConvolution.vertex.hlsl",
-		"Source/Shaders/hdriConvolution.pixel.hlsl", rootSignature, false, true, false, DXGI_FORMAT_R32G32B32A32_FLOAT);
+	DXPipelineDescription description;
+	description.VertexPath = "Source/Shaders/hdriConvolution.vertex.hlsl";
+	description.PixelPath = "Source/Shaders/hdriConvolution.pixel.hlsl";
+	description.RootSignature = rootSignature;
+	description.RenderTargetFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+	pipeline = new DXPipeline(description);
 }
 
 void HDRIConvolutionStage::CreateScreenMesh()

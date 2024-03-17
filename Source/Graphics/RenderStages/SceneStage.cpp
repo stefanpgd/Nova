@@ -95,5 +95,12 @@ void SceneStage::CreatePipeline()
 	rootParameters[6].InitAsDescriptorTable(1, &materialRange[0], D3D12_SHADER_VISIBILITY_PIXEL); // material
 
 	rootSignature = new DXRootSignature(rootParameters, _countof(rootParameters), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-	pipeline = new DXPipeline("Source/Shaders/default.vertex.hlsl", "Source/Shaders/default.pixel.hlsl", rootSignature, true);
+
+	DXPipelineDescription description;
+	description.VertexPath = "Source/Shaders/default.vertex.hlsl";
+	description.PixelPath = "Source/Shaders/default.pixel.hlsl";
+	description.RootSignature = rootSignature;
+	description.DoAlphaBlending = true;
+
+	pipeline = new DXPipeline(description);
 }

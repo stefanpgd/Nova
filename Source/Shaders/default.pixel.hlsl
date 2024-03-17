@@ -275,7 +275,7 @@ float4 main(PixelIN IN) : SV_TARGET
         float3 kS = fresnelSchlickRoughness(max(NoV, 0.0), f0, roughness);
         float3 kD = 1.0 - kS;
         kD *= 1.0 - metallic;
-        float3 irradiance = GetSkydome(normal).rgb * irradianceIntensity;
+        float3 irradiance = GetSkydome(normal) * irradianceIntensity;
         float3 diffuse = irradiance * albedo;
         float3 ambient = kD * diffuse * ambientOcclusion;
         

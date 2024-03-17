@@ -7,18 +7,31 @@ using namespace Microsoft::WRL;
 
 class DXRootSignature;
 
+struct DXPipelineDescription
+{
+	DXRootSignature* RootSignature;
+
+	std::string VertexPath;
+	std::string PixelPath;
+
+	DXGI_FORMAT RenderTargetFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+	bool UsePixelShader = true;
+	bool DoAlphaBlending = false;
+	bool DoBackCulling = false;
+};
+
 class DXPipeline
 {
 public:
-	DXPipeline(const std::string& vertexPath, const std::string pixelPath, DXRootSignature* rootsignature, 
-		bool doAlphaBlending = false, bool usePixelShader = true, bool doBackCull = false, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
+	DXPipeline(const DXPipelineDescription& pipelineDescription);
 
 	ComPtr<ID3D12PipelineState> Get();
 	ID3D12PipelineState* GetAddress();
 
 private:
-	void CompileShaders(const std::string& vertexPath, const std::string pixelPath);
-	void CreatePipelineState(DXRootSignature* rootsignature);
+	void CompileShaders();
+	void CreatePipelineState();
 
 private:
 	ComPtr<ID3D12PipelineState> pipeline;
@@ -26,8 +39,5 @@ private:
 	ComPtr<ID3DBlob> vertexShaderBlob;
 	ComPtr<ID3DBlob> pixelShaderBlob;
 
-	bool alphaBlending;
-	bool usePixelShader; 
-	bool doBackCull;
-	DXGI_FORMAT rtvFormat;
+	DXPipelineDescription description;
 };

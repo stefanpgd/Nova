@@ -53,7 +53,12 @@ void ScreenStage::CreatePipeline()
 	rootSignature = new DXRootSignature(screenRootParameters, _countof(screenRootParameters),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-	pipeline = new DXPipeline("Source/Shaders/screen.vertex.hlsl", "Source/Shaders/screen.pixel.hlsl", rootSignature);
+	DXPipelineDescription description;
+	description.VertexPath = "Source/Shaders/screen.vertex.hlsl";
+	description.PixelPath = "Source/Shaders/screen.pixel.hlsl";
+	description.RootSignature = rootSignature;
+
+	pipeline = new DXPipeline(description);
 }
 
 void ScreenStage::CreateScreenMesh()

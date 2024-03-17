@@ -92,5 +92,10 @@ void SkydomeStage::CreatePipeline()
 	rootSignature = new DXRootSignature(skydomeRootParameters, _countof(skydomeRootParameters), 
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-	pipeline = new DXPipeline("Source/Shaders/skydome.vertex.hlsl", "Source/Shaders/skydome.pixel.hlsl", rootSignature);
+	DXPipelineDescription description;
+	description.VertexPath = "Source/Shaders/skydome.vertex.hlsl";
+	description.PixelPath = "Source/Shaders/skydome.pixel.hlsl";
+	description.RootSignature = rootSignature;
+
+	pipeline = new DXPipeline(description);
 }
